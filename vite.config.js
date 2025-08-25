@@ -7,6 +7,8 @@ export default defineConfig({
     target: 'es2019',
     rollupOptions: {
       output: {
+        format: 'iife',
+        name: 'FlowApp',
         manualChunks: undefined,
         entryFileNames: 'assets/[name].[hash].js',
         chunkFileNames: 'assets/[name].[hash].js',
@@ -19,6 +21,12 @@ export default defineConfig({
   },
   plugins: [
     react(),
+    {
+      name: 'remove-module-type',
+      transformIndexHtml(html) {
+        return html.replace(/<script type="module"/g, '<script');
+      }
+    },
     VitePWA({
       disable: true,
       registerType: 'autoUpdate',
