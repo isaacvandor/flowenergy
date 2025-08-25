@@ -24,9 +24,13 @@
         <h1 style="color: #3B82F6; margin-bottom: 16px;">Focus & Flow</h1>
         <p style="color: #6B7280; margin-bottom: 20px;">Loading...</p>
         <div style="width: 32px; height: 32px; border: 3px solid #E5E7EB; border-top: 3px solid #3B82F6; border-radius: 50%; animation: spin 1s linear infinite;"></div>
-        <p id="error-message" style="color: #EF4444; margin-top: 20px; display: none;">
-          Error loading app. Please try refreshing or use a different browser.
-        </p>
+        <div id="error-message" style="color: #EF4444; margin-top: 20px; display: none; background: #FEF2F2; padding: 16px; border-radius: 8px; border: 1px solid #FCA5A5;">
+          <strong>Error loading app</strong><br>
+          <span id="error-details">Please try refreshing or use a different browser.</span><br>
+          <button onclick="window.location.reload()" style="margin-top: 12px; background: #EF4444; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+            Reload Page
+          </button>
+        </div>
       </div>
     </div>
     
@@ -44,14 +48,22 @@
         document.getElementById('error-message').style.display = 'block';
       });
       
-      // Remove fallback when React loads
+      // Keep fallback visible longer and check for errors
       window.addEventListener('load', function() {
         setTimeout(function() {
           const fallback = document.getElementById('mobile-fallback');
-          if (fallback && document.querySelector('#root > div')) {
+          const errorMsg = document.getElementById('error-message');
+          
+          // If there's an error, keep the fallback visible and show error
+          if (errorMsg && errorMsg.style.display !== 'none') {
+            return; // Don't hide fallback if there's an error
+          }
+          
+          // Only hide if React actually rendered content
+          if (fallback && document.querySelector('#root > div') && !document.querySelector('.error-boundary')) {
             fallback.style.display = 'none';
           }
-        }, 1000);
+        }, 3000); // Increased to 3 seconds
       });
     </script>
     

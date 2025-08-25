@@ -26,10 +26,15 @@ try {
   }
 } catch (error) {
   console.error('Failed to mount React app:', error);
-  // Show error message
+  // Show error message with details
   const errorEl = document.getElementById('error-message');
-  if (errorEl) {
+  const errorDetails = document.getElementById('error-details');
+  if (errorEl && errorDetails) {
     errorEl.style.display = 'block';
-    errorEl.textContent = 'Failed to start app: ' + error.message;
+    errorDetails.innerHTML = `
+      <strong>React Mount Error:</strong><br>
+      ${error.message}<br>
+      <small>Check browser console for more details</small>
+    `;
   }
 }

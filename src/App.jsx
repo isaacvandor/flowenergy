@@ -70,39 +70,54 @@ const MobileErrorBoundary = ({ children }) => {
 
   if (hasError) {
     return (
-      <div style={{
+      <div className="error-boundary" style={{
         padding: '20px',
         textAlign: 'center',
-        fontFamily: 'system-ui, sans-serif'
+        fontFamily: 'system-ui, sans-serif',
+        height: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center'
       }}>
-        <h1 style={{ color: '#EF4444', marginBottom: '16px' }}>App Error</h1>
-        <p style={{ color: '#6B7280', marginBottom: '16px' }}>
-          Sorry, something went wrong on mobile.
+        <h1 style={{ color: '#EF4444', marginBottom: '16px', fontSize: '24px' }}>Mobile Error Detected</h1>
+        <p style={{ color: '#6B7280', marginBottom: '16px', maxWidth: '400px' }}>
+          The app crashed on your mobile device. Here's the error:
         </p>
-        <p style={{ 
+        <div style={{ 
           color: '#374151', 
           fontSize: '14px',
-          backgroundColor: '#F3F4F6',
-          padding: '12px',
+          backgroundColor: '#FEF2F2',
+          border: '1px solid #FCA5A5',
+          padding: '16px',
           borderRadius: '8px',
-          fontFamily: 'monospace'
+          fontFamily: 'monospace',
+          maxWidth: '400px',
+          marginBottom: '20px',
+          textAlign: 'left',
+          wordWrap: 'break-word'
         }}>
+          <strong>Error:</strong><br/>
           {error}
-        </p>
+        </div>
         <button 
           onClick={() => window.location.reload()} 
           style={{
-            backgroundColor: '#3B82F6',
+            backgroundColor: '#EF4444',
             color: 'white',
             border: 'none',
             padding: '12px 24px',
             borderRadius: '8px',
             marginTop: '16px',
-            cursor: 'pointer'
+            cursor: 'pointer',
+            fontSize: '16px'
           }}
         >
           Reload App
         </button>
+        <p style={{ fontSize: '12px', color: '#9CA3AF', marginTop: '16px' }}>
+          If this keeps happening, try using a different browser
+        </p>
       </div>
     );
   }
