@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimal React Debug</title>
+    <style>
+        body { font-family: system-ui, sans-serif; padding: 20px; }
+        .step { padding: 10px; margin: 5px 0; border-radius: 4px; }
+        .pass { background: #d4edda; color: #155724; }
+        .fail { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <h1>🔬 Minimal React Debug</h1>
+    <div id="results"></div>
+    <div id="root"></div>
+    
+    <script>
+        const results = document.getElementById('results');
+        
+        function addResult(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = 'step ' + type;
+            div.textContent = message;
+            results.appendChild(div);
+        }
+        
+        addResult('Starting minimal React debug...', 'info');
+        
+        // Step 1: Load our production bundle
+        const script = document.createElement('script');
+        script.src = '/assets/index.hNxhb8xS.js';
+        
+        script.onload = function() {
+            addResult('✅ Production bundle loaded', 'pass');
+            
+            // Step 2: Check if React is available
+            setTimeout(function() {
+                if (typeof window.React !== 'undefined') {
+                    addResult('✅ React is available: ' + typeof React, 'pass');
+                } else {
+                    addResult('❌ React not available', 'fail');
+                    return;
+                }
+                
+                if (typeof window.ReactDOM !== 'undefined') {
+                    addResult('✅ ReactDOM is available: ' + typeof ReactDOM, 'pass');
+                } else {
+                    addResult('❌ ReactDOM not available', 'fail');
+                    return;
+                }
+                
+                // Step 3: Try simplest possible React render
+                try {
+                    addResult('Attempting minimal React render...', 'info');
+                    
+                    // Create simplest possible React element - no JSX
+                    const element = React.createElement('div', {
+                        style: { color: 'green', fontSize: '18px', padding: '20px', border: '2px solid green' }
+                    }, 'Minimal React Element Works! ✅');
+                    
+                    const rootElement = document.getElementById('root');
+                    
+                    // Try legacy render first
+                    ReactDOM.render(element, rootElement);
+                    
+                    addResult('✅ Minimal React render successful!', 'pass');
+                    
+                    // Step 4: Try with JSX (if it works)
+                    setTimeout(function() {
+                        try {
+                            addResult('Attempting JSX render...', 'info');
+                            
+                            // This will fail if JSX transpilation is broken
+                            const jsxElement = React.createElement('div', {
+                                style: { color: 'blue', fontSize: '16px', padding: '10px', marginTop: '10px', border: '2px solid blue' }
+                            }, 'JSX-style element works too! 🎉');
+                            
+                            ReactDOM.render(jsxElement, rootElement);
+                            addResult('✅ JSX-style render successful!', 'pass');
+                            
+                        } catch (jsxError) {
+                            addResult('❌ JSX render failed: ' + jsxError.message, 'fail');
+                            addResult('JSX Error details: ' + jsxError.stack, 'fail');
+                        }
+                    }, 1000);
+                    
+                } catch (error) {
+                    addResult('❌ Minimal React render failed: ' + error.message, 'fail');
+                    addResult('Error details: ' + error.stack, 'fail');
+                }
+                
+            }, 1000);
+        };
+        
+        script.onerror = function(error) {
+            addResult('❌ Failed to load production bundle: ' + error, 'fail');
+        };
+        
+        document.head.appendChild(script);
+    </script>
+</body>
+</html>
