@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile JavaScript Syntax Test</title>
+    <style>
+        body { font-family: system-ui, sans-serif; padding: 20px; }
+        .test { margin: 10px 0; padding: 10px; border-radius: 4px; }
+        .pass { background: #d1fae5; border: 1px solid #10b981; color: #065f46; }
+        .fail { background: #fee2e2; border: 1px solid #ef4444; color: #991b1b; }
+    </style>
+</head>
+<body>
+    <h1>🧪 JavaScript Syntax Test</h1>
+    <div id="results"></div>
+    
+    <script>
+        const results = document.getElementById('results');
+        
+        function addResult(test, passed, error = null) {
+            const div = document.createElement('div');
+            div.className = `test ${passed ? 'pass' : 'fail'}`;
+            div.innerHTML = `
+                <strong>${test}:</strong> ${passed ? '✅ PASS' : '❌ FAIL'}
+                ${error ? `<br><small>Error: ${error}</small>` : ''}
+            `;
+            results.appendChild(div);
+        }
+        
+        // Test 1: Arrow functions
+        try {
+            const test = () => 'arrow function works';
+            addResult('Arrow Functions', test() === 'arrow function works');
+        } catch (e) {
+            addResult('Arrow Functions', false, e.message);
+        }
+        
+        // Test 2: Template literals
+        try {
+            const name = 'world';
+            const test = `Hello ${name}`;
+            addResult('Template Literals', test === 'Hello world');
+        } catch (e) {
+            addResult('Template Literals', false, e.message);
+        }
+        
+        // Test 3: Destructuring
+        try {
+            const obj = { a: 1, b: 2 };
+            const { a, b } = obj;
+            addResult('Destructuring', a === 1 && b === 2);
+        } catch (e) {
+            addResult('Destructuring', false, e.message);
+        }
+        
+        // Test 4: Spread operator
+        try {
+            const arr1 = [1, 2];
+            const arr2 = [...arr1, 3];
+            addResult('Spread Operator', arr2.length === 3);
+        } catch (e) {
+            addResult('Spread Operator', false, e.message);
+        }
+        
+        // Test 5: Default parameters
+        try {
+            function test(param = 'default') { return param; }
+            addResult('Default Parameters', test() === 'default');
+        } catch (e) {
+            addResult('Default Parameters', false, e.message);
+        }
+        
+        // Test 6: Let/const
+        try {
+            let testLet = 'let works';
+            const testConst = 'const works';
+            addResult('Let/Const', testLet && testConst);
+        } catch (e) {
+            addResult('Let/Const', false, e.message);
+        }
+        
+        // Test 7: for...of loop
+        try {
+            let result = '';
+            for (const item of ['a', 'b']) {
+                result += item;
+            }
+            addResult('For...of Loop', result === 'ab');
+        } catch (e) {
+            addResult('For...of Loop', false, e.message);
+        }
+        
+        // Test 8: Class syntax
+        try {
+            class TestClass {
+                constructor() { this.value = 'class works'; }
+            }
+            const instance = new TestClass();
+            addResult('Class Syntax', instance.value === 'class works');
+        } catch (e) {
+            addResult('Class Syntax', false, e.message);
+        }
+        
+        // Test 9: Array.from
+        try {
+            const test = Array.from([1, 2, 3], x => x * 2);
+            addResult('Array.from', test[0] === 2);
+        } catch (e) {
+            addResult('Array.from', false, e.message);
+        }
+        
+        // Test 10: Object.assign
+        try {
+            const test = Object.assign({}, { a: 1 }, { b: 2 });
+            addResult('Object.assign', test.a === 1 && test.b === 2);
+        } catch (e) {
+            addResult('Object.assign', false, e.message);
+        }
+        
+        // Test 11: Promise
+        try {
+            Promise.resolve('promise works').then(value => {
+                addResult('Promise', value === 'promise works');
+            });
+        } catch (e) {
+            addResult('Promise', false, e.message);
+        }
+        
+        // Test 12: Module syntax (this will fail in regular script)
+        try {
+            // This would normally fail, but we'll simulate
+            addResult('Module Syntax', false, 'Cannot use import/export in regular script');
+        } catch (e) {
+            addResult('Module Syntax', false, e.message);
+        }
+    </script>
+</body>
+</html>
