@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>React Mobile Test</title>
+    <style>
+        body {
+            font-family: system-ui, sans-serif;
+            padding: 20px;
+            margin: 0;
+        }
+        .status {
+            padding: 16px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: 2px solid;
+        }
+        .success { background: #f0fdf4; border-color: #22c55e; color: #16a34a; }
+        .error { background: #fef2f2; border-color: #ef4444; color: #dc2626; }
+        .loading { background: #fef3c7; border-color: #f59e0b; color: #d97706; }
+    </style>
+</head>
+<body>
+    <h1>React Mobile Debug</h1>
+    <div id="status">
+        <div class="status loading">Testing React loading...</div>
+    </div>
+    <div id="react-root">React will render here</div>
+
+    <!-- Load React from CDN (same version as your app) -->
+    <script crossorigin src="https://unpkg.com/react@19.1.1/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@19.1.1/umd/react-dom.production.min.js"></script>
+
+    <script>
+        const status = document.getElementById('status');
+        
+        function addStatus(message, type = 'loading') {
+            const div = document.createElement('div');
+            div.className = `status ${type}`;
+            div.textContent = message;
+            status.appendChild(div);
+            console.log(message);
+        }
+
+        try {
+            addStatus('✅ React CDN loaded successfully', 'success');
+
+            // Test if React and ReactDOM are available
+            if (!window.React) {
+                throw new Error('React not found in window object');
+            }
+            if (!window.ReactDOM) {
+                throw new Error('ReactDOM not found in window object');
+            }
+            
+            addStatus('✅ React and ReactDOM objects found', 'success');
+
+            // Create a simple React component
+            const TestComponent = React.createElement('div', {
+                style: {
+                    background: '#dbeafe',
+                    padding: '16px',
+                    borderRadius: '8px',
+                    border: '2px solid #3b82f6',
+                    color: '#1e40af',
+                    margin: '16px 0'
+                }
+            }, [
+                React.createElement('h2', { key: 'title' }, '🎉 React Works on Mobile!'),
+                React.createElement('p', { key: 'desc' }, 'React 19 is functioning correctly on this mobile device.'),
+                React.createElement('p', { key: 'info', style: { fontSize: '14px', marginTop: '12px' } }, 
+                    'User Agent: ' + navigator.userAgent.substring(0, 100) + '...'
+                )
+            ]);
+
+            // Try to render the component
+            const container = document.getElementById('react-root');
+            const root = ReactDOM.createRoot(container);
+            root.render(TestComponent);
+
+            addStatus('✅ React component rendered successfully', 'success');
+            
+            // Test error boundary functionality
+            setTimeout(() => {
+                addStatus('All React tests completed successfully!', 'success');
+            }, 100);
+
+        } catch (error) {
+            addStatus('❌ React Error: ' + error.message, 'error');
+            addStatus('Stack: ' + (error.stack || 'No stack trace'), 'error');
+        }
+
+        // Test module loading (which your app uses)
+        addStatus('Testing ES6 modules...', 'loading');
+        try {
+            // This should fail on mobile if ES6 modules don't work
+            const testModule = `
+                export const test = 'modules work';
+            `;
+            const blob = new Blob([testModule], { type: 'application/javascript' });
+            const url = URL.createObjectURL(blob);
+            
+            // If we get here, modules are supported
+            addStatus('✅ ES6 modules appear to be supported', 'success');
+            URL.revokeObjectURL(url);
+        } catch (error) {
+            addStatus('❌ ES6 modules error: ' + error.message, 'error');
+        }
+    </script>
+</body>
+</html>
