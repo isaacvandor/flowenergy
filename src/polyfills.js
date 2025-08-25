@@ -1,14 +1,152 @@
-// Mobile Safari Polyfills
+// Mobile Safari Polyfills - Browser Compatible
 // Load these before React to ensure compatibility
+
+console.log('Loading mobile Safari polyfills...');
 
 // Promise polyfill for older Safari versions
 if (typeof Promise === 'undefined') {
-  window.Promise = require('promise/lib/es6-extensions.js');
+  // Simple Promise polyfill
+  window.Promise = function(executor) {
+    var self = this;
+    self.state = 'pending';
+    self.value = undefined;
+    self.handlers = [];
+    
+    function resolve(result) {
+      if (self.state === 'pending') {
+        self.state = 'resolved';
+        self.value = result;
+        self.handlers.forEach(function(handler) {
+          handler.onResolve(result);
+        });
+      }
+    }
+    
+    function reject(error) {
+      if (self.state === 'pending') {
+        self.state = 'rejected';
+        self.value = error;
+        self.handlers.forEach(function(handler) {
+          handler.onReject(error);
+        });
+      }
+    }
+    
+    self.then = function(onResolve, onReject) {
+      return new Promise(function(resolve, reject) {
+        function handle() {
+          if (self.state === 'resolved') {
+            if (onResolve) {
+              try {
+                resolve(onResolve(self.value));
+              } catch (ex) {
+                reject(ex);
+              }
+            } else {
+              resolve(self.value);
+            }
+          } else if (self.state === 'rejected') {
+            if (onReject) {
+              try {
+                resolve(onReject(self.value));
+              } catch (ex) {
+                reject(ex);
+              }
+            } else {
+              reject(self.value);
+            }
+          }
+        }
+        
+        if (self.state !== 'pending') {
+          setTimeout(handle, 0);
+        } else {
+          self.handlers.push({
+            onResolve: function(result) {
+              if (onResolve) {
+                try {
+                  resolve(onResolve(result));
+                } catch (ex) {
+                  reject(ex);
+                }
+              } else {
+                resolve(result);
+              }
+            },
+            onReject: function(error) {
+              if (onReject) {
+                try {
+                  resolve(onReject(error));
+                } catch (ex) {
+                  reject(ex);
+                }
+              } else {
+                reject(error);
+              }
+            }
+          });
+        }
+      });
+    };
+    
+    try {
+      executor(resolve, reject);
+    } catch (ex) {
+      reject(ex);
+    }
+  };
+  
+  Promise.resolve = function(value) {
+    return new Promise(function(resolve) {
+      resolve(value);
+    });
+  };
+  
+  Promise.reject = function(error) {
+    return new Promise(function(resolve, reject) {
+      reject(error);
+    });
+  };
 }
 
 // Fetch polyfill for Safari < 10.1
 if (typeof fetch === 'undefined') {
-  require('whatwg-fetch');
+  window.fetch = function(url, options) {
+    return new Promise(function(resolve, reject) {
+      var xhr = new XMLHttpRequest();
+      var method = (options && options.method) || 'GET';
+      
+      xhr.open(method, url);
+      
+      if (options && options.headers) {
+        for (var key in options.headers) {
+          if (options.headers.hasOwnProperty(key)) {
+            xhr.setRequestHeader(key, options.headers[key]);
+          }
+        }
+      }
+      
+      xhr.onload = function() {
+        resolve({
+          ok: xhr.status >= 200 && xhr.status < 300,
+          status: xhr.status,
+          statusText: xhr.statusText,
+          text: function() {
+            return Promise.resolve(xhr.responseText);
+          },
+          json: function() {
+            return Promise.resolve(JSON.parse(xhr.responseText));
+          }
+        });
+      };
+      
+      xhr.onerror = function() {
+        reject(new Error('Network error'));
+      };
+      
+      xhr.send((options && options.body) || null);
+    });
+  };
 }
 
 // Object.assign polyfill for Safari < 9
@@ -82,7 +220,13 @@ if (!String.prototype.padStart) {
     } else {
       targetLength = targetLength - this.length;
       if (targetLength > padString.length) {
-        padString += padString.repeat(targetLength / padString.length);
+        // Safe repeat implementation
+        var repeated = '';
+        var count = Math.ceil(targetLength / padString.length);
+        for (var i = 0; i < count; i++) {
+          repeated += padString;
+        }
+        padString = repeated;
       }
       return padString.slice(0, targetLength) + String(this);
     }
