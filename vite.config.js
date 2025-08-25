@@ -7,19 +7,25 @@ export default defineConfig({
     target: ['es2015', 'safari11'],
     rollupOptions: {
       output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom']
-        },
+        format: 'iife',
+        manualChunks: undefined,
         entryFileNames: 'assets/[name].[hash].js',
         chunkFileNames: 'assets/[name].[hash].js',
         assetFileNames: 'assets/[name].[hash].[ext]'
       }
     },
     sourcemap: false,
-    minify: 'terser'
+    minify: 'terser',
+    modulePreload: false
   },
   plugins: [
     react(),
+    {
+      name: 'remove-module-type',
+      transformIndexHtml(html) {
+        return html.replace(/<script type="module"/g, '<script');
+      }
+    },
     VitePWA({
       disable: true,
       registerType: 'autoUpdate',
