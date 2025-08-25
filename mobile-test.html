@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Test</title>
+    <style>
+        body {
+            font-family: system-ui, sans-serif;
+            padding: 20px;
+            margin: 0;
+        }
+        .test {
+            background: #f0f9ff;
+            border: 2px solid #0ea5e9;
+            padding: 16px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .error {
+            background: #fef2f2;
+            border: 2px solid #ef4444;
+            color: #dc2626;
+        }
+        .success {
+            background: #f0fdf4;
+            border: 2px solid #22c55e;
+            color: #16a34a;
+        }
+    </style>
+</head>
+<body>
+    <h1>Mobile Debug Test</h1>
+    <div id="tests"></div>
+    
+    <script>
+        const tests = document.getElementById('tests');
+        
+        function addTest(name, test, expected) {
+            const div = document.createElement('div');
+            div.className = 'test';
+            
+            try {
+                const result = test();
+                const success = result === expected || (expected === 'truthy' && result);
+                div.className += success ? ' success' : ' error';
+                div.innerHTML = `
+                    <strong>${name}:</strong> ${success ? '✅ PASS' : '❌ FAIL'}<br>
+                    Result: ${result}<br>
+                    Expected: ${expected}
+                `;
+            } catch (error) {
+                div.className += ' error';
+                div.innerHTML = `
+                    <strong>${name}:</strong> ❌ ERROR<br>
+                    ${error.message}
+                `;
+            }
+            
+            tests.appendChild(div);
+        }
+        
+        // Test basic JavaScript features
+        addTest('Arrow Functions', () => [1,2,3].map(x => x * 2).join(','), '2,4,6');
+        addTest('Template Literals', () => `Hello ${1 + 1}`, 'Hello 2');
+        addTest('Object Spread', () => JSON.stringify({...{a:1}, b:2}), '{"a":1,"b":2}');
+        addTest('Array Includes', () => [1,2,3].includes(2), true);
+        addTest('String PadStart', () => '5'.padStart ? '5'.padStart(2, '0') : 'not supported', '05');
+        
+        // Test browser APIs
+        addTest('Local Storage', () => {
+            localStorage.setItem('test', 'ok');
+            return localStorage.getItem('test');
+        }, 'ok');
+        
+        addTest('Window MatchMedia', () => window.matchMedia ? 'supported' : 'not supported', 'supported');
+        addTest('Audio Context', () => (window.AudioContext || window.webkitAudioContext) ? 'supported' : 'not supported', 'supported');
+        
+        // Test CSS features
+        addTest('Viewport Units', () => {
+            const div = document.createElement('div');
+            div.style.height = '1vh';
+            return div.style.height ? 'supported' : 'not supported';
+        }, 'supported');
+        
+        // Test React-related features
+        addTest('JSON Parse/Stringify', () => {
+            const obj = {test: 'value'};
+            return JSON.parse(JSON.stringify(obj)).test;
+        }, 'value');
+        
+        console.log('Mobile test completed. Check results above.');
+    </script>
+</body>
+</html>

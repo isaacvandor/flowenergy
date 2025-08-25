@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimal App Test</title>
+    <style>
+        body { 
+            font-family: system-ui, sans-serif; 
+            padding: 20px; 
+            margin: 0; 
+            background: white;
+        }
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: #f0f9ff;
+            border: 2px solid #0ea5e9;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+        .success {
+            color: #16a34a;
+            background: #f0fdf4;
+            border: 2px solid #22c55e;
+            padding: 16px;
+            border-radius: 8px;
+            margin: 16px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Minimal React Test</h1>
+        <div id="react-root">Loading React...</div>
+        <div id="status">Starting test...</div>
+    </div>
+
+    <script type="module">
+        const status = document.getElementById('status');
+        const root = document.getElementById('react-root');
+        
+        function updateStatus(msg) {
+            status.innerHTML = msg;
+            console.log(msg);
+        }
+
+        try {
+            updateStatus('Step 1: Creating minimal React component...');
+            
+            // Import React the same way your app does
+            const React = await import('https://esm.sh/react@19.1.1');
+            const ReactDOM = await import('https://esm.sh/react-dom@19.1.1/client');
+            
+            updateStatus('Step 2: React modules imported successfully');
+
+            // Create the simplest possible React component
+            const TestApp = () => {
+                const [count, setCount] = React.useState(0);
+                
+                return React.createElement('div', {
+                    className: 'success'
+                }, [
+                    React.createElement('h2', { key: 'title' }, '🎉 React 19 Works!'),
+                    React.createElement('p', { key: 'count' }, `Count: ${count}`),
+                    React.createElement('button', {
+                        key: 'btn',
+                        onClick: () => setCount(count + 1),
+                        style: {
+                            background: '#3b82f6',
+                            color: 'white',
+                            border: 'none',
+                            padding: '12px 24px',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            fontSize: '16px'
+                        }
+                    }, 'Click me!')
+                ]);
+            };
+
+            updateStatus('Step 3: Mounting React component...');
+
+            // Mount exactly like your app does
+            const reactRoot = ReactDOM.createRoot(root);
+            reactRoot.render(React.createElement(TestApp));
+            
+            updateStatus('✅ SUCCESS: React mounted and rendered!');
+            
+            setTimeout(() => {
+                updateStatus('🎯 DIAGNOSIS: React 19 works fine on your iPhone. The issue is in your app code, not React itself.');
+            }, 1000);
+
+        } catch (error) {
+            updateStatus(`❌ ERROR: ${error.message}`);
+            console.error('React mounting error:', error);
+            
+            // Show full error details
+            root.innerHTML = `
+                <div style="background: #fef2f2; border: 2px solid #ef4444; padding: 16px; border-radius: 8px; color: #dc2626;">
+                    <strong>React Error:</strong><br>
+                    ${error.message}<br><br>
+                    <strong>Stack:</strong><br>
+                    <pre style="font-size: 12px; overflow: auto;">${error.stack}</pre>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>

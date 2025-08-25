@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bundle Test</title>
+    <style>
+        body { font-family: system-ui, sans-serif; padding: 20px; margin: 0; }
+        .status { padding: 16px; margin: 10px 0; border-radius: 8px; border: 2px solid; }
+        .success { background: #f0fdf4; border-color: #22c55e; color: #16a34a; }
+        .error { background: #fef2f2; border-color: #ef4444; color: #dc2626; }
+        .info { background: #f0f9ff; border-color: #3b82f6; color: #1e40af; }
+    </style>
+</head>
+<body>
+    <h1>Bundle Loading Test</h1>
+    <div id="results"></div>
+
+    <script>
+        const results = document.getElementById('results');
+        
+        function addResult(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `status ${type}`;
+            div.innerHTML = message;
+            results.appendChild(div);
+            console.log(message);
+        }
+
+        // Test 1: Can we load our own app's JavaScript bundle?
+        addResult('🔍 Testing main app bundle loading...', 'info');
+        
+        const script = document.createElement('script');
+        script.type = 'module';
+        
+        let loadTimeout = setTimeout(() => {
+            addResult('❌ Main app bundle failed to load within 10 seconds', 'error');
+            addResult('💡 This suggests the issue is with loading your app\'s JavaScript bundle on mobile', 'error');
+            
+            // Test if regular scripts work
+            testRegularScript();
+        }, 10000);
+
+        script.onload = () => {
+            clearTimeout(loadTimeout);
+            addResult('✅ Main app bundle loaded successfully!', 'success');
+            addResult('🤔 If bundle loads but app doesn\'t work, the issue is in the React mounting process', 'info');
+        };
+
+        script.onerror = () => {
+            clearTimeout(loadTimeout);
+            addResult('❌ Main app bundle failed to load', 'error');
+            addResult('📱 Mobile browsers may be rejecting the ES6 module bundle', 'error');
+            
+            // Test if regular scripts work
+            testRegularScript();
+        };
+
+        // Try to load your actual app bundle
+        script.src = '/assets/index.CPJ1tE2z.js';
+        document.head.appendChild(script);
+
+        function testRegularScript() {
+            addResult('🔍 Testing regular (non-module) script loading...', 'info');
+            
+            const regularScript = document.createElement('script');
+            regularScript.textContent = `
+                window.regularScriptTest = true;
+                console.log('Regular script executed successfully');
+            `;
+            
+            document.head.appendChild(regularScript);
+            
+            setTimeout(() => {
+                if (window.regularScriptTest) {
+                    addResult('✅ Regular scripts work fine', 'success');
+                    addResult('💡 Issue is specifically with ES6 modules or your app bundle', 'info');
+                } else {
+                    addResult('❌ Even regular scripts are failing', 'error');
+                }
+            }, 100);
+        }
+
+        // Test 2: Network connectivity
+        addResult('🌐 Testing network connectivity...', 'info');
+        fetch(window.location.href)
+            .then(() => addResult('✅ Network connectivity is working', 'success'))
+            .catch(error => addResult('❌ Network issues: ' + error.message, 'error'));
+
+        // Test 3: Mobile browser info
+        addResult(`📱 Browser: ${navigator.userAgent}`, 'info');
+        addResult(`📱 Screen: ${screen.width}x${screen.height}`, 'info');
+        addResult(`📱 Viewport: ${window.innerWidth}x${window.innerHeight}`, 'info');
+    </script>
+</body>
+</html>
