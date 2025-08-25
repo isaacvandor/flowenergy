@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Production Bundle Test</title>
+    <!-- NO CSS - testing if CSS is the issue -->
+    <style>
+        body { 
+            font-family: system-ui, sans-serif; 
+            padding: 20px; 
+            background: white;
+            margin: 0;
+        }
+        .status {
+            padding: 16px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: 2px solid;
+        }
+        .success { background: #f0fdf4; border-color: #22c55e; color: #16a34a; }
+        .error { background: #fef2f2; border-color: #ef4444; color: #dc2626; }
+        .info { background: #f0f9ff; border-color: #3b82f6; color: #1e40af; }
+    </style>
+</head>
+<body>
+    <h1>🔬 Production Bundle Test</h1>
+    <div class="status info">Testing your exact production bundle WITHOUT CSS...</div>
+    
+    <div id="root">
+        <!-- This is where your app should render -->
+        <div id="loading-fallback" style="text-align: center; padding: 40px;">
+            <h2>Loading Production App...</h2>
+            <p>If this stays visible, the production bundle failed to mount React.</p>
+        </div>
+    </div>
+    
+    <div id="debug-info"></div>
+
+    <script>
+        const debugInfo = document.getElementById('debug-info');
+        
+        function addDebugInfo(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `status ${type}`;
+            div.textContent = message;
+            debugInfo.appendChild(div);
+            console.log(message);
+        }
+
+        // Monitor for successful React mount
+        let checkCount = 0;
+        const checkForReactMount = setInterval(() => {
+            checkCount++;
+            const root = document.getElementById('root');
+            const fallback = document.getElementById('loading-fallback');
+            
+            // Check if React has rendered anything
+            const hasReactContent = root.children.length > 1 || 
+                                  (root.children.length === 1 && !root.children[0].id === 'loading-fallback');
+            
+            if (hasReactContent) {
+                addDebugInfo('✅ SUCCESS: Production React app mounted successfully!', 'success');
+                addDebugInfo('🎯 DIAGNOSIS: The issue is with CSS, not JavaScript!', 'success');
+                clearInterval(checkForReactMount);
+                if (fallback && fallback.parentNode) {
+                    fallback.parentNode.removeChild(fallback);
+                }
+            } else if (checkCount > 50) { // 5 seconds
+                addDebugInfo('❌ TIMEOUT: Production bundle loaded but React never mounted', 'error');
+                addDebugInfo('🔍 This means there\'s a JavaScript error in your production bundle', 'error');
+                clearInterval(checkForReactMount);
+            }
+        }, 100);
+
+        // Load your exact production bundle
+        addDebugInfo('📦 Loading production JavaScript bundle...', 'info');
+        
+        const script = document.createElement('script');
+        script.type = 'module';
+        script.src = '/assets/index.CPJ1tE2z.js';
+        
+        script.onload = () => {
+            addDebugInfo('✅ Production bundle loaded successfully', 'success');
+            addDebugInfo('⏳ Waiting for React to mount...', 'info');
+        };
+        
+        script.onerror = (error) => {
+            addDebugInfo('❌ Failed to load production bundle: ' + error.message, 'error');
+            clearInterval(checkForReactMount);
+        };
+        
+        document.head.appendChild(script);
+
+        // Also test loading the CSS separately to see if it causes issues
+        setTimeout(() => {
+            addDebugInfo('🎨 Now testing CSS loading...', 'info');
+            
+            const cssLink = document.createElement('link');
+            cssLink.rel = 'stylesheet';
+            cssLink.href = '/assets/index.OjzGivhm.css';
+            
+            cssLink.onload = () => {
+                addDebugInfo('✅ CSS loaded successfully', 'success');
+            };
+            
+            cssLink.onerror = () => {
+                addDebugInfo('❌ CSS failed to load', 'error');
+            };
+            
+            // Don't load CSS immediately - let's see if JS works without it first
+            // document.head.appendChild(cssLink);
+        }, 2000);
+    </script>
+</body>
+</html>
