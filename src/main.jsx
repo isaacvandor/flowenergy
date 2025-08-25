@@ -3,6 +3,10 @@ import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
 import './index.css'
 
+// Expose React globally for debugging
+window.React = React;
+window.ReactDOM = ReactDOM;
+
 // Mobile-safe React mounting with DOM ready check
 function mountReactApp() {
   try {

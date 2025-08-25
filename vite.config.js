@@ -7,8 +7,10 @@ export default defineConfig({
     target: ['es2015', 'safari11'],
     rollupOptions: {
       output: {
-        format: 'iife',
-        manualChunks: undefined,
+        manualChunks: {
+          react: ['react', 'react-dom'],
+          icons: ['lucide-react']
+        },
         entryFileNames: 'assets/[name].[hash].js',
         chunkFileNames: 'assets/[name].[hash].js',
         assetFileNames: 'assets/[name].[hash].[ext]'
@@ -20,12 +22,6 @@ export default defineConfig({
   },
   plugins: [
     react(),
-    {
-      name: 'remove-module-type',
-      transformIndexHtml(html) {
-        return html.replace(/<script type="module"/g, '<script');
-      }
-    },
     VitePWA({
       disable: true,
       registerType: 'autoUpdate',
