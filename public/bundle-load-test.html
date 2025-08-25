@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bundle Load Test</title>
+    <style>
+        body { font-family: system-ui, sans-serif; padding: 20px; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .success { background: #d1fae5; color: #065f46; }
+        .error { background: #fee2e2; color: #991b1b; }
+        .info { background: #dbeafe; color: #1e40af; }
+    </style>
+</head>
+<body>
+    <h1>📦 Bundle Loading Test</h1>
+    <div id="status">Starting test...</div>
+    
+    <script>
+        const statusEl = document.getElementById('status');
+        
+        function addStatus(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = 'status ' + type;
+            div.textContent = new Date().toLocaleTimeString() + ': ' + message;
+            statusEl.appendChild(div);
+        }
+        
+        addStatus('Testing bundle fetch...', 'info');
+        
+        // Test 1: Can we fetch the bundle?
+        fetch('/assets/index.DhdH84Tl.js')
+            .then(response => {
+                addStatus('Bundle fetch response: ' + response.status, response.ok ? 'success' : 'error');
+                addStatus('Bundle size: ' + (response.headers.get('content-length') || 'unknown') + ' bytes', 'info');
+                return response.text();
+            })
+            .then(jsCode => {
+                addStatus('Bundle content length: ' + jsCode.length + ' characters', 'info');
+                addStatus('First 100 chars: ' + jsCode.substring(0, 100), 'info');
+                
+                // Test 2: Try to execute just the first line
+                try {
+                    const firstLine = jsCode.split('\n')[0];
+                    addStatus('First line: ' + firstLine.substring(0, 50) + '...', 'info');
+                    
+                    // Test 3: Check if it contains IIFE pattern
+                    if (jsCode.includes('(function()') || jsCode.includes('(()=>') || jsCode.includes('!function')) {
+                        addStatus('✅ IIFE pattern detected in bundle', 'success');
+                    } else {
+                        addStatus('❌ No IIFE pattern found in bundle', 'error');
+                    }
+                    
+                    // Test 4: Try creating and executing script element
+                    addStatus('Attempting to load script element...', 'info');
+                    const script = document.createElement('script');
+                    script.src = '/assets/index.DhdH84Tl.js';
+                    
+                    script.onload = () => {
+                        addStatus('✅ Script loaded successfully', 'success');
+                        
+                        // Check if React was loaded
+                        if (typeof React !== 'undefined') {
+                            addStatus('✅ React is available globally', 'success');
+                        } else {
+                            addStatus('❌ React not found in global scope', 'error');
+                        }
+                        
+                        // Check if root element exists
+                        const root = document.getElementById('root');
+                        if (root) {
+                            addStatus('✅ Root element found', 'success');
+                        } else {
+                            addStatus('❌ Root element not found', 'error');
+                        }
+                    };
+                    
+                    script.onerror = (error) => {
+                        addStatus('❌ Script failed to load: ' + error, 'error');
+                    };
+                    
+                    document.head.appendChild(script);
+                    
+                } catch (error) {
+                    addStatus('❌ Error analyzing bundle: ' + error.message, 'error');
+                }
+            })
+            .catch(error => {
+                addStatus('❌ Failed to fetch bundle: ' + error.message, 'error');
+            });
+    </script>
+    
+    <!-- Add a root element for React mounting test -->
+    <div id="root"></div>
+</body>
+</html>

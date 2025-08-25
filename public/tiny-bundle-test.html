@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tiny Bundle Test</title>
+    <style>
+        body { font-family: system-ui, sans-serif; padding: 20px; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .success { background: #d1fae5; color: #065f46; }
+        .error { background: #fee2e2; color: #991b1b; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Tiny Bundle Test</h1>
+    <div id="status">Creating minimal JavaScript bundle...</div>
+    <div id="root"></div>
+    
+    <script>
+        const statusEl = document.getElementById('status');
+        
+        function addStatus(message, isError = false) {
+            const div = document.createElement('div');
+            div.className = 'status ' + (isError ? 'error' : 'success');
+            div.textContent = new Date().toLocaleTimeString() + ': ' + message;
+            statusEl.appendChild(div);
+        }
+        
+        // Create a tiny IIFE that does what our app tries to do
+        const tinyBundle = `
+(function() {
+    'use strict';
+    
+    // Test basic modern JavaScript features
+    const test = {
+        arrow: () => 'arrow functions work',
+        template: \`template literals work\`,
+        destructuring: function() {
+            const {a} = {a: 1};
+            return a === 1;
+        },
+        spread: function() {
+            const arr = [...[1,2,3]];
+            return arr.length === 3;
+        }
+    };
+    
+    console.log('Tiny bundle: Basic JS tests passed');
+    
+    // Try to do what React mounting does
+    try {
+        const rootEl = document.getElementById('root');
+        if (rootEl) {
+            rootEl.innerHTML = '<div style="color: green; font-size: 18px; padding: 20px; border: 2px solid green; border-radius: 8px; margin: 10px 0;"><h3>✅ Tiny Bundle Success!</h3><p>This proves JavaScript execution works on mobile Safari</p><ul><li>IIFE format: ✅</li><li>Modern syntax: ✅</li><li>DOM manipulation: ✅</li><li>Bundle size: ~1KB vs 255KB</li></ul></div>';
+            console.log('Tiny bundle: DOM manipulation successful');
+            
+            window.TINY_BUNDLE_SUCCESS = true;
+        } else {
+            throw new Error('Root element not found');
+        }
+    } catch (error) {
+        console.error('Tiny bundle error:', error);
+        document.body.innerHTML += '<div style="color: red; padding: 20px;">Tiny Bundle Error: ' + error.message + '</div>';
+    }
+})();
+        `;
+        
+        addStatus('Creating tiny bundle script...');
+        
+        // Create blob URL for the tiny bundle
+        const blob = new Blob([tinyBundle], { type: 'application/javascript' });
+        const bundleUrl = URL.createObjectURL(blob);
+        
+        addStatus('Tiny bundle size: ' + tinyBundle.length + ' characters (~1KB)');
+        addStatus('Our production bundle: 254,730 characters (~255KB)');
+        addStatus('Size difference: ' + Math.round(254730 / tinyBundle.length) + 'x larger');
+        
+        // Load the tiny bundle
+        const script = document.createElement('script');
+        script.src = bundleUrl;
+        
+        script.onload = () => {
+            addStatus('✅ Tiny bundle loaded and executed successfully!');
+            
+            if (window.TINY_BUNDLE_SUCCESS) {
+                addStatus('✅ Tiny bundle DOM manipulation worked!');
+                addStatus('🔍 CONCLUSION: The issue is likely BUNDLE SIZE or REACT 19 compatibility');
+            } else {
+                addStatus('❌ Tiny bundle execution failed');
+            }
+        };
+        
+        script.onerror = (error) => {
+            addStatus('❌ Tiny bundle failed to load: ' + error, true);
+            addStatus('🔍 If tiny bundle fails, the issue is deeper than bundle size', true);
+        };
+        
+        document.head.appendChild(script);
+    </script>
+</body>
+</html>
