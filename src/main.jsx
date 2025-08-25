@@ -3,25 +3,14 @@ import './polyfills.js'
 
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import * as ReactDOMLegacy from 'react-dom'
 import App from './App.jsx'
 import './index.css'
 
-// Expose React globally for debugging with both modern and legacy methods
+// Expose React globally for debugging
 window.React = React;
-window.ReactDOM = {
-  ...ReactDOM,
-  render: ReactDOMLegacy.render,  // Add legacy render method
-  unmountComponentAtNode: ReactDOMLegacy.unmountComponentAtNode
-};
+window.ReactDOM = ReactDOM;
 
-// Detect mobile Safari (known to have issues with React 18 createRoot)
-function isMobileSafari() {
-  const userAgent = navigator.userAgent;
-  return /iPad|iPhone|iPod/.test(userAgent) && /Safari/.test(userAgent) && !/Chrome|CriOS|FxiOS/.test(userAgent);
-}
-
-// Mobile-safe React mounting with Safari compatibility
+// Mobile-safe React mounting
 function mountReactApp() {
   try {
     const rootElement = document.getElementById('root');
@@ -30,16 +19,19 @@ function mountReactApp() {
       
       const appComponent = <App />;
       
-      if (isMobileSafari()) {
-        console.log('Mobile Safari detected, using legacy render method');
-        // Use React 17 legacy render for mobile Safari compatibility
-        ReactDOMLegacy.render(appComponent, rootElement);
-      } else {
-        console.log('Using React 18 createRoot');
-        // Use React 18 createRoot for other browsers
-        const root = ReactDOM.createRoot(rootElement);
-        root.render(appComponent);
+      console.log('Using React 18 createRoot');
+      // Mobile Safari compatibility: ensure createRoot is accessible
+      const createRootFn = ReactDOM.createRoot || window.ReactDOM?.createRoot || window.ReactDOM?.default?.createRoot;
+      
+      if (typeof createRootFn !== 'function') {
+        console.error('createRoot not found. ReactDOM structure:', ReactDOM);
+        console.error('window.ReactDOM structure:', window.ReactDOM);
+        throw new Error('React 18 createRoot method not accessible - possible mobile Safari module resolution issue');
       }
+      
+      // Use React 18 createRoot
+      const root = createRootFn(rootElement);
+      root.render(appComponent);
       
       console.log('React mounted successfully');
       
