@@ -10,18 +10,32 @@ import './index.css'
 window.React = React;
 window.ReactDOM = ReactDOM;
 
-// Mobile-safe React mounting with DOM ready check
+// Detect mobile Safari (known to have issues with React 18 createRoot)
+function isMobileSafari() {
+  const userAgent = navigator.userAgent;
+  return /iPad|iPhone|iPod/.test(userAgent) && /Safari/.test(userAgent) && !/Chrome|CriOS|FxiOS/.test(userAgent);
+}
+
+// Mobile-safe React mounting with Safari compatibility
 function mountReactApp() {
   try {
     const rootElement = document.getElementById('root');
     if (rootElement) {
       console.log('Root element found, mounting React...');
-      const root = ReactDOM.createRoot(rootElement);
-      root.render(
-        <React.StrictMode>
-          <App />
-        </React.StrictMode>
-      );
+      
+      const appComponent = <App />;
+      
+      if (isMobileSafari()) {
+        console.log('Mobile Safari detected, using legacy render method');
+        // Use React 17 legacy render for mobile Safari compatibility
+        ReactDOM.render(appComponent, rootElement);
+      } else {
+        console.log('Using React 18 createRoot');
+        // Use React 18 createRoot for other browsers
+        const root = ReactDOM.createRoot(rootElement);
+        root.render(appComponent);
+      }
+      
       console.log('React mounted successfully');
       
       // Hide fallback loading screen when React mounts
