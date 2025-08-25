@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Basic React Test</title>
+    <style>
+        body { font-family: system-ui, sans-serif; padding: 20px; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .success { background: #d1fae5; color: #065f46; }
+        .error { background: #fee2e2; color: #991b1b; }
+    </style>
+</head>
+<body>
+    <h1>🔬 Basic React Test</h1>
+    <div id="status">Loading...</div>
+    <div id="root"></div>
+    
+    <script>
+        const statusEl = document.getElementById('status');
+        
+        function setStatus(message, isError = false) {
+            statusEl.textContent = message;
+            statusEl.className = 'status ' + (isError ? 'error' : 'success');
+        }
+        
+        // Test basic JavaScript first
+        try {
+            setStatus('Testing basic JavaScript...');
+            
+            // Very basic ES5-compatible code
+            function testBasic() {
+                var obj = { test: true };
+                return obj.test;
+            }
+            
+            if (!testBasic()) {
+                throw new Error('Basic JavaScript failed');
+            }
+            
+            setStatus('Basic JavaScript works. Loading React...');
+            
+            // Load React with error handling
+            var reactScript = document.createElement('script');
+            reactScript.crossOrigin = 'anonymous';
+            reactScript.src = 'https://unpkg.com/react@18/umd/react.production.min.js';
+            
+            reactScript.onerror = function() {
+                setStatus('Failed to load React', true);
+            };
+            
+            reactScript.onload = function() {
+                setStatus('React loaded. Loading ReactDOM...');
+                
+                var reactDOMScript = document.createElement('script');
+                reactDOMScript.crossOrigin = 'anonymous';
+                reactDOMScript.src = 'https://unpkg.com/react-dom@18/umd/react-dom.production.min.js';
+                
+                reactDOMScript.onerror = function() {
+                    setStatus('Failed to load ReactDOM', true);
+                };
+                
+                reactDOMScript.onload = function() {
+                    setStatus('ReactDOM loaded. Creating component...');
+                    
+                    try {
+                        // Very basic React component using createElement (no JSX)
+                        var e = React.createElement;
+                        
+                        function SimpleComponent() {
+                            return e('div', { style: { color: 'green', fontSize: '18px' } }, 
+                                e('h2', null, 'React Works on Mobile! ✅'),
+                                e('p', null, 'This is rendered with React 18'),
+                                e('button', { 
+                                    onClick: function() { 
+                                        setStatus('Button clicked! React events work too! 🎉'); 
+                                    } 
+                                }, 'Click me to test events')
+                            );
+                        }
+                        
+                        var root = ReactDOM.createRoot(document.getElementById('root'));
+                        root.render(e(SimpleComponent));
+                        
+                        setStatus('SUCCESS: React component rendered!');
+                        
+                    } catch (error) {
+                        setStatus('Failed to render React component: ' + error.message, true);
+                    }
+                };
+                
+                document.head.appendChild(reactDOMScript);
+            };
+            
+            document.head.appendChild(reactScript);
+            
+        } catch (error) {
+            setStatus('JavaScript Error: ' + error.message, true);
+        }
+    </script>
+</body>
+</html>
