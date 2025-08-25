@@ -29,7 +29,7 @@
         addStatus('Testing bundle fetch...', 'info');
         
         // Test 1: Can we fetch the bundle?
-        fetch('/assets/index.DhdH84Tl.js')
+        fetch('/assets/index.C6mQvRP6.js')
             .then(response => {
                 addStatus('Bundle fetch response: ' + response.status, response.ok ? 'success' : 'error');
                 addStatus('Bundle size: ' + (response.headers.get('content-length') || 'unknown') + ' bytes', 'info');
@@ -54,7 +54,8 @@
                     // Test 4: Try creating and executing script element
                     addStatus('Attempting to load script element...', 'info');
                     const script = document.createElement('script');
-                    script.src = '/assets/index.DhdH84Tl.js';
+                    script.type = 'module';
+                    script.src = '/assets/index.C6mQvRP6.js';
                     
                     script.onload = () => {
                         addStatus('✅ Script loaded successfully', 'success');
