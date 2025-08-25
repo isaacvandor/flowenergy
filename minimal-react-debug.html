@@ -63,8 +63,17 @@
                     
                     const rootElement = document.getElementById('root');
                     
-                    // Try legacy render first
-                    ReactDOM.render(element, rootElement);
+                    // Try React 18 createRoot (what our bundle actually uses)
+                    if (ReactDOM.createRoot) {
+                        addResult('Using React 18 createRoot method', 'info');
+                        const root = ReactDOM.createRoot(rootElement);
+                        root.render(element);
+                    } else if (ReactDOM.render) {
+                        addResult('Using legacy ReactDOM.render method', 'info');
+                        ReactDOM.render(element, rootElement);
+                    } else {
+                        throw new Error('No render method available');
+                    }
                     
                     addResult('✅ Minimal React render successful!', 'pass');
                     
@@ -78,7 +87,13 @@
                                 style: { color: 'blue', fontSize: '16px', padding: '10px', marginTop: '10px', border: '2px solid blue' }
                             }, 'JSX-style element works too! 🎉');
                             
-                            ReactDOM.render(jsxElement, rootElement);
+                            // Use the same render method that worked above
+                            if (ReactDOM.createRoot) {
+                                const root = ReactDOM.createRoot(rootElement);
+                                root.render(jsxElement);
+                            } else {
+                                ReactDOM.render(jsxElement, rootElement);
+                            }
                             addResult('✅ JSX-style render successful!', 'pass');
                             
                         } catch (jsxError) {
