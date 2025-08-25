@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error Debug Console</title>
+    <style>
+        body { 
+            font-family: system-ui, sans-serif; 
+            padding: 20px; 
+            margin: 0; 
+            background: white;
+        }
+        .error-log {
+            background: #fef2f2;
+            border: 2px solid #ef4444;
+            color: #dc2626;
+            padding: 16px;
+            border-radius: 8px;
+            margin: 16px 0;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .console-log {
+            background: #f0f9ff;
+            border: 2px solid #3b82f6;
+            color: #1e40af;
+            padding: 16px;
+            border-radius: 8px;
+            margin: 16px 0;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🐛 JavaScript Error Console</h1>
+    <div id="error-display"></div>
+    <div id="console-display"></div>
+    
+    <script>
+        const errorDisplay = document.getElementById('error-display');
+        const consoleDisplay = document.getElementById('console-display');
+        
+        let errorCount = 0;
+        let consoleCount = 0;
+        
+        // Capture all JavaScript errors
+        window.addEventListener('error', function(event) {
+            errorCount++;
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-log';
+            errorDiv.innerHTML = `
+                <strong>Error #${errorCount}:</strong><br>
+                Message: ${event.message}<br>
+                File: ${event.filename}<br>
+                Line: ${event.lineno}:${event.colno}<br>
+                Stack: ${event.error ? event.error.stack : 'No stack trace'}<br>
+                Time: ${new Date().toLocaleTimeString()}
+            `;
+            errorDisplay.appendChild(errorDiv);
+        });
+        
+        // Capture unhandled promise rejections
+        window.addEventListener('unhandledrejection', function(event) {
+            errorCount++;
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-log';
+            errorDiv.innerHTML = `
+                <strong>Promise Rejection #${errorCount}:</strong><br>
+                Reason: ${event.reason}<br>
+                Time: ${new Date().toLocaleTimeString()}
+            `;
+            errorDisplay.appendChild(errorDiv);
+        });
+        
+        // Override console methods to capture logs
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            consoleCount++;
+            const logDiv = document.createElement('div');
+            logDiv.className = 'console-log';
+            logDiv.textContent = `LOG #${consoleCount}: ${args.join(' ')} [${new Date().toLocaleTimeString()}]`;
+            consoleDisplay.appendChild(logDiv);
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            errorCount++;
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-log';
+            errorDiv.innerHTML = `<strong>Console Error #${errorCount}:</strong><br>${args.join(' ')}<br>Time: ${new Date().toLocaleTimeString()}`;
+            errorDisplay.appendChild(errorDiv);
+        };
+        
+        console.warn = function(...args) {
+            originalWarn.apply(console, args);
+            consoleCount++;
+            const logDiv = document.createElement('div');
+            logDiv.className = 'console-log';
+            logDiv.textContent = `WARN #${consoleCount}: ${args.join(' ')} [${new Date().toLocaleTimeString()}]`;
+            consoleDisplay.appendChild(logDiv);
+        };
+        
+        // Now load your production bundle and watch for errors
+        setTimeout(() => {
+            console.log('Loading production JavaScript bundle...');
+            
+            const script = document.createElement('script');
+            script.type = 'module';
+            script.src = '/assets/index.CPJ1tE2z.js';
+            
+            script.onload = () => {
+                console.log('Production bundle loaded successfully');
+            };
+            
+            script.onerror = (error) => {
+                console.error('Failed to load production bundle:', error);
+            };
+            
+            document.head.appendChild(script);
+        }, 1000);
+    </script>
+</body>
+</html>
