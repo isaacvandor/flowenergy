@@ -41,6 +41,75 @@ const safeLocalStorage = {
   }
 };
 
+// Create mobile error boundary component
+const MobileErrorBoundary = ({ children }) => {
+  const [hasError, setHasError] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const handleError = (event) => {
+      console.error('Mobile error caught:', event.error);
+      setHasError(true);
+      setError((event.error && event.error.message) || 'Unknown error');
+    };
+
+    const handleRejection = (event) => {
+      console.error('Mobile promise rejection:', event.reason);
+      setHasError(true);
+      setError((event.reason && event.reason.message) || 'Promise rejection');
+    };
+
+    window.addEventListener('error', handleError);
+    window.addEventListener('unhandledrejection', handleRejection);
+
+    return () => {
+      window.removeEventListener('error', handleError);
+      window.removeEventListener('unhandledrejection', handleRejection);
+    };
+  }, []);
+
+  if (hasError) {
+    return (
+      <div style={{
+        padding: '20px',
+        textAlign: 'center',
+        fontFamily: 'system-ui, sans-serif'
+      }}>
+        <h1 style={{ color: '#EF4444', marginBottom: '16px' }}>App Error</h1>
+        <p style={{ color: '#6B7280', marginBottom: '16px' }}>
+          Sorry, something went wrong on mobile.
+        </p>
+        <p style={{ 
+          color: '#374151', 
+          fontSize: '14px',
+          backgroundColor: '#F3F4F6',
+          padding: '12px',
+          borderRadius: '8px',
+          fontFamily: 'monospace'
+        }}>
+          {error}
+        </p>
+        <button 
+          onClick={() => window.location.reload()} 
+          style={{
+            backgroundColor: '#3B82F6',
+            color: 'white',
+            border: 'none',
+            padding: '12px 24px',
+            borderRadius: '8px',
+            marginTop: '16px',
+            cursor: 'pointer'
+          }}
+        >
+          Reload App
+        </button>
+      </div>
+    );
+  }
+
+  return children;
+};
+
 const App = () => {
   // Mobile debugging - log to console for remote debugging
   useEffect(() => {
@@ -49,15 +118,6 @@ const App = () => {
       screenSize: `${window.screen.width}x${window.screen.height}`,
       windowSize: `${window.innerWidth}x${window.innerHeight}`,
       isMobile: /Mobi|Android/i.test(navigator.userAgent)
-    });
-    
-    // Catch unhandled errors
-    window.addEventListener('error', function(e) {
-      console.error('Global error:', e.error);
-    });
-    
-    window.addEventListener('unhandledrejection', function(e) {
-      console.error('Unhandled promise rejection:', e.reason);
     });
   }, []);
 
@@ -1737,12 +1797,14 @@ const App = () => {
   };
 
   return (
-    <div className="max-w-md mx-auto bg-gray-50 min-h-screen flex flex-col safe-area-inset">
-      <div className="flex-1 overflow-auto">
-        {renderScreen()}
+    <MobileErrorBoundary>
+      <div className="max-w-md mx-auto bg-gray-50 min-h-screen flex flex-col safe-area-inset">
+        <div className="flex-1 overflow-auto">
+          {renderScreen()}
+        </div>
+        {(currentScreen !== 'session' && currentScreen !== 'complete' && !showSettings) && <BottomNav />}
       </div>
-      {(currentScreen !== 'session' && currentScreen !== 'complete' && !showSettings) && <BottomNav />}
-    </div>
+    </MobileErrorBoundary>
   );
 };
 
