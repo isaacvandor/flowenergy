@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Legacy Support Test</title>
+    <style>
+        body { 
+            font-family: system-ui, sans-serif; 
+            padding: 20px; 
+            background: #f9fafb;
+        }
+        .status { 
+            padding: 12px; 
+            margin: 10px 0; 
+            border-radius: 6px; 
+        }
+        .success { 
+            background: #d1fae5; 
+            color: #065f46; 
+        }
+        .error { 
+            background: #fee2e2; 
+            color: #991b1b; 
+        }
+        .info { 
+            background: #dbeafe; 
+            color: #1e40af; 
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Legacy Browser Support Test</h1>
+    <div id="status">Testing legacy browser detection...</div>
+    <div id="root"></div>
+    
+    <script>
+        const statusEl = document.getElementById('status');
+        
+        function addStatus(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = 'status ' + type;
+            div.innerHTML = '<strong>' + new Date().toLocaleTimeString() + ':</strong> ' + message;
+            statusEl.appendChild(div);
+        }
+        
+        // Test 1: Module support detection
+        const supportsModules = 'noModule' in document.createElement('script');
+        addStatus('Browser supports ES modules: ' + (supportsModules ? '✅ YES' : '❌ NO'), supportsModules ? 'success' : 'error');
+        
+        // Test 2: Check what scripts are loaded
+        setTimeout(() => {
+            const moduleScripts = document.querySelectorAll('script[type="module"]');
+            const nomoduleScripts = document.querySelectorAll('script[nomodule]');
+            
+            addStatus('Module scripts found: ' + moduleScripts.length, 'info');
+            addStatus('NoModule scripts found: ' + nomoduleScripts.length, 'info');
+            
+            if (!supportsModules && nomoduleScripts.length > 0) {
+                addStatus('✅ Legacy fallback should activate', 'success');
+            } else if (supportsModules && moduleScripts.length > 0) {
+                addStatus('✅ Modern modules should load', 'success');
+            } else {
+                addStatus('❌ No appropriate scripts found', 'error');
+            }
+            
+            // Test 3: Check for SystemJS (used by legacy bundles)
+            setTimeout(() => {
+                if (typeof System !== 'undefined') {
+                    addStatus('✅ SystemJS loader available', 'success');
+                } else {
+                    addStatus('❌ SystemJS loader not found', 'error');
+                }
+                
+                // Test 4: Check React availability
+                setTimeout(() => {
+                    if (typeof React !== 'undefined') {
+                        addStatus('✅ React loaded successfully', 'success');
+                    } else {
+                        addStatus('❌ React not available', 'error');
+                    }
+                    
+                    // Test 5: Check app mounting
+                    setTimeout(() => {
+                        const appContent = document.querySelector('#root > div:not([id])');
+                        if (appContent) {
+                            addStatus('✅ React app mounted successfully!', 'success');
+                        } else {
+                            addStatus('❌ React app failed to mount', 'error');
+                        }
+                    }, 3000);
+                }, 2000);
+            }, 1000);
+        }, 500);
+    </script>
+    
+    <!-- Copy the exact legacy detection from our main app -->
+    <script type="module">import.meta.url;import("_").catch(()=>1);(async function*(){})().next();window.__vite_is_modern_browser=true</script>
+    <script type="module">!function(){if(window.__vite_is_modern_browser)return;console.warn("vite: loading legacy chunks, syntax error above and the same error below should be ignored");var e=document.getElementById("vite-legacy-polyfill"),n=document.createElement("script");n.src=e.src,n.onload=function(){System.import(document.getElementById('vite-legacy-entry').getAttribute('data-src'))},document.body.appendChild(n)}();</script>
+    
+    <!-- Legacy fallback scripts -->
+    <script nomodule>!function(){var e=document,t=e.createElement("script");if(!("noModule"in t)&&"onbeforeload"in t){var n=!1;e.addEventListener("beforeload",(function(e){if(e.target===t)n=!0;else if(!e.target.hasAttribute("nomodule")||!n)return;e.preventDefault()}),!0),t.type="module",t.src=".",e.head.appendChild(t),t.remove()}}();</script>
+    <script nomodule crossorigin id="vite-legacy-polyfill" src="/assets/polyfills-legacy.CvIvPYfC.js"></script>
+    <script nomodule crossorigin id="vite-legacy-entry" data-src="/assets/index-legacy.DB8FDnc_.js">System.import(document.getElementById('vite-legacy-entry').getAttribute('data-src'))</script>
+</body>
+</html>

@@ -1,17 +1,13 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
-import legacy from '@vitejs/plugin-legacy'
 
 export default defineConfig({
   build: {
-    target: ['es2015', 'safari11'],
+    target: 'es2019',
     rollupOptions: {
       output: {
-        manualChunks: {
-          react: ['react', 'react-dom'],
-          icons: ['lucide-react']
-        },
+        manualChunks: undefined,
         entryFileNames: 'assets/[name].[hash].js',
         chunkFileNames: 'assets/[name].[hash].js',
         assetFileNames: 'assets/[name].[hash].[ext]'
@@ -23,10 +19,6 @@ export default defineConfig({
   },
   plugins: [
     react(),
-    legacy({
-      targets: ['defaults', 'not IE 11', 'iOS >= 10', 'Safari >= 10'],
-      additionalLegacyPolyfills: ['regenerator-runtime/runtime']
-    }),
     VitePWA({
       disable: true,
       registerType: 'autoUpdate',

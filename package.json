@@ -33,5 +33,19 @@
     "terser": "^5.43.1",
     "vite": "^7.1.2",
     "vite-plugin-pwa": "^1.0.3"
+  },
+  "browserslist": {
+    "production": [
+      "iOS >= 9",
+      "Safari >= 9", 
+      "Android >= 4.4",
+      "> 0.2%",
+      "not dead"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
   }
 }

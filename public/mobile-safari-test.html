@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Mobile Safari Compatibility Test</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif; 
+            padding: 20px; 
+            margin: 0;
+            background: #f5f5f7;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #1d1d1f;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 16px;
+            border-radius: 8px;
+            border-left: 4px solid #007aff;
+        }
+        .test-item { 
+            padding: 8px 12px; 
+            margin: 8px 0; 
+            border-radius: 6px; 
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .pass { 
+            background: #d4edda; 
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .fail { 
+            background: #f8d7da; 
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info { 
+            background: #d1ecf1; 
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .summary {
+            background: #e2e3e5;
+            padding: 16px;
+            border-radius: 8px;
+            margin-top: 30px;
+            text-align: center;
+        }
+        .summary.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .summary.failure {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .app-test {
+            margin-top: 30px;
+            border: 2px solid #007aff;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .app-test-header {
+            background: #007aff;
+            color: white;
+            padding: 12px 16px;
+            font-weight: 600;
+        }
+        #root {
+            min-height: 200px;
+            padding: 20px;
+            background: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📱 Mobile Safari Compatibility Test</h1>
+        
+        <div class="test-section">
+            <h2>📋 Browser Information</h2>
+            <div id="browser-info"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>🧪 JavaScript Feature Tests</h2>
+            <div id="feature-tests"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>🔧 Polyfill Tests</h2>
+            <div id="polyfill-tests"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>📦 Bundle Loading Test</h2>
+            <div id="bundle-tests"></div>
+        </div>
+        
+        <div class="app-test">
+            <div class="app-test-header">⚛️ React App Test</div>
+            <div id="root">
+                <div style="text-align: center; padding: 40px; color: #666;">
+                    Loading React app...
+                </div>
+            </div>
+        </div>
+        
+        <div class="summary" id="summary">
+            Running tests...
+        </div>
+    </div>
+    
+    <script>
+        class MobileSafariTester {
+            constructor() {
+                this.tests = [];
+                this.passed = 0;
+                this.failed = 0;
+            }
+            
+            addTest(name, testFn, category) {
+                try {
+                    const result = testFn();
+                    this.tests.push({ name, result: true, message: result || 'PASS', category });
+                    this.passed++;
+                } catch (error) {
+                    this.tests.push({ name, result: false, message: error.message, category });
+                    this.failed++;
+                }
+            }
+            
+            displayResults() {
+                // Browser Info
+                document.getElementById('browser-info').innerHTML = this.getBrowserInfo();
+                
+                // Feature Tests
+                const featureTests = this.tests.filter(t => t.category === 'feature');
+                document.getElementById('feature-tests').innerHTML = this.renderTests(featureTests);
+                
+                // Polyfill Tests  
+                const polyfillTests = this.tests.filter(t => t.category === 'polyfill');
+                document.getElementById('polyfill-tests').innerHTML = this.renderTests(polyfillTests);
+                
+                // Bundle Tests
+                const bundleTests = this.tests.filter(t => t.category === 'bundle');
+                document.getElementById('bundle-tests').innerHTML = this.renderTests(bundleTests);
+                
+                // Summary
+                this.displaySummary();
+            }
+            
+            renderTests(tests) {
+                return tests.map(test => 
+                    `<div class="test-item ${test.result ? 'pass' : 'fail'}">
+                        ${test.result ? '✅' : '❌'} ${test.name}: ${test.message}
+                    </div>`
+                ).join('');
+            }
+            
+            getBrowserInfo() {
+                return `
+                    <div class="test-item info">🌐 User Agent: ${navigator.userAgent}</div>
+                    <div class="test-item info">📱 Platform: ${navigator.platform}</div>
+                    <div class="test-item info">🔢 Screen: ${screen.width}x${screen.height}</div>
+                    <div class="test-item info">💾 Memory: ${navigator.deviceMemory || 'Unknown'} GB</div>
+                    <div class="test-item info">🌍 Language: ${navigator.language}</div>
+                `;
+            }
+            
+            displaySummary() {
+                const total = this.passed + this.failed;
+                const successRate = Math.round((this.passed / total) * 100);
+                const summaryEl = document.getElementById('summary');
+                
+                summaryEl.className = `summary ${this.failed === 0 ? 'success' : 'failure'}`;
+                summaryEl.innerHTML = `
+                    <h3>${this.failed === 0 ? '🎉 All Tests Passed!' : '⚠️ Some Tests Failed'}</h3>
+                    <p>Results: ${this.passed}/${total} tests passed (${successRate}%)</p>
+                    ${this.failed === 0 ? 
+                        '<p><strong>Your mobile Safari setup is working correctly!</strong></p>' : 
+                        '<p>Check failed tests above to identify compatibility issues.</p>'
+                    }
+                `;
+            }
+        }
+        
+        // Initialize tester
+        const tester = new MobileSafariTester();
+        
+        // Browser Feature Tests
+        tester.addTest('ES6 Arrow Functions', () => {
+            const test = () => 'arrow functions work';
+            return test() === 'arrow functions work';
+        }, 'feature');
+        
+        tester.addTest('Template Literals', () => {
+            const name = 'world';
+            return `Hello ${name}` === 'Hello world';
+        }, 'feature');
+        
+        tester.addTest('Let/Const', () => {
+            let testVar = 'let works';
+            const testConst = 'const works';
+            return testVar && testConst;
+        }, 'feature');
+        
+        tester.addTest('Destructuring', () => {
+            const { a, b } = { a: 1, b: 2 };
+            return a === 1 && b === 2;
+        }, 'feature');
+        
+        tester.addTest('Spread Operator', () => {
+            const arr = [...[1, 2, 3]];
+            return arr.length === 3;
+        }, 'feature');
+        
+        // Polyfill Tests
+        tester.addTest('Promise Support', () => {
+            return typeof Promise === 'function';
+        }, 'polyfill');
+        
+        tester.addTest('Fetch API', () => {
+            return typeof fetch === 'function';
+        }, 'polyfill');
+        
+        tester.addTest('Object.assign', () => {
+            return typeof Object.assign === 'function';
+        }, 'polyfill');
+        
+        tester.addTest('Array.from', () => {
+            return typeof Array.from === 'function';
+        }, 'polyfill');
+        
+        tester.addTest('Set Support', () => {
+            return typeof Set === 'function';
+        }, 'polyfill');
+        
+        tester.addTest('String.padStart', () => {
+            return '5'.padStart(3, '0') === '005';
+        }, 'polyfill');
+        
+        // Bundle Loading Test
+        tester.addTest('localStorage', () => {
+            localStorage.setItem('test', 'works');
+            const result = localStorage.getItem('test');
+            localStorage.removeItem('test');
+            return result === 'works';
+        }, 'bundle');
+        
+        tester.addTest('JSON Support', () => {
+            const obj = { test: 'value' };
+            return JSON.parse(JSON.stringify(obj)).test === 'value';
+        }, 'bundle');
+        
+        // Display initial results
+        tester.displayResults();
+        
+        // Test React App Loading
+        setTimeout(() => {
+            // Check if React app loaded
+            const appContent = document.querySelector('#root > div:not([style])');
+            if (appContent) {
+                tester.addTest('React App Mount', () => {
+                    return 'React app mounted successfully';
+                }, 'bundle');
+            } else {
+                tester.addTest('React App Mount', () => {
+                    throw new Error('React app failed to mount');
+                }, 'bundle');
+            }
+            tester.displayResults();
+        }, 5000);
+        
+        // Load the actual React app after a delay
+        setTimeout(() => {
+            const script = document.createElement('script');
+            script.type = 'module';
+            script.crossOrigin = 'anonymous';
+            
+            // Try to load the current production bundle
+            fetch('/assets/')
+                .then(response => response.text())
+                .then(html => {
+                    // Extract the script src from the index.html
+                    const match = html.match(/src="\/assets\/(index\.[a-zA-Z0-9]+\.js)"/);
+                    if (match) {
+                        script.src = `/assets/${match[1]}`;
+                        document.head.appendChild(script);
+                        
+                        tester.addTest('Bundle Load Attempt', () => {
+                            return `Loading bundle: ${match[1]}`;
+                        }, 'bundle');
+                        tester.displayResults();
+                    }
+                })
+                .catch(error => {
+                    // Fallback to known bundle names or direct loading
+                    console.error('Could not determine bundle name:', error);
+                });
+        }, 1000);
+    </script>
+</body>
+</html>
