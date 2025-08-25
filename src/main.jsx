@@ -3,12 +3,17 @@ import './polyfills.js'
 
 import React from 'react'
 import ReactDOM from 'react-dom/client'
+import * as ReactDOMLegacy from 'react-dom'
 import App from './App.jsx'
 import './index.css'
 
-// Expose React globally for debugging
+// Expose React globally for debugging with both modern and legacy methods
 window.React = React;
-window.ReactDOM = ReactDOM;
+window.ReactDOM = {
+  ...ReactDOM,
+  render: ReactDOMLegacy.render,  // Add legacy render method
+  unmountComponentAtNode: ReactDOMLegacy.unmountComponentAtNode
+};
 
 // Detect mobile Safari (known to have issues with React 18 createRoot)
 function isMobileSafari() {
@@ -28,7 +33,7 @@ function mountReactApp() {
       if (isMobileSafari()) {
         console.log('Mobile Safari detected, using legacy render method');
         // Use React 17 legacy render for mobile Safari compatibility
-        ReactDOM.render(appComponent, rootElement);
+        ReactDOMLegacy.render(appComponent, rootElement);
       } else {
         console.log('Using React 18 createRoot');
         // Use React 18 createRoot for other browsers
