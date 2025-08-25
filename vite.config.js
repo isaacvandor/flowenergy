@@ -2,29 +2,29 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import legacy from '@vitejs/plugin-legacy'
 
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
     react(),
     legacy({
-      // Browserslist targets — adjust to your audience
-      targets: [
-        'defaults',        // covers >0.5% usage, last 2 versions, not dead
-        'safari >= 11'     // important for iOS Safari
-      ],
+      // Browsers you want legacy fallback for
+      targets: ['defaults', 'safari >= 11'],
       additionalLegacyPolyfills: ['regenerator-runtime/runtime'],
-      modernPolyfills: true, // injects only what's needed for modern browsers
-    })
+      renderLegacyChunks: true, // make sure legacy bundle is emitted
+    }),
   ],
   build: {
-    // Keep modern syntax for modern browsers
-    target: 'esnext',
+    target: 'es2015',
     rollupOptions: {
       output: {
-        format: 'iife',
-        name: 'FlowApp'
-      }
-    }
-  }
+        // Modern bundle keeps hashes for cache busting
+        entryFileNames: 'assets/[name]-[hash].js',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash][extname]',
+
+        // Force legacy entry to always be named legacy.js
+        manualChunks: undefined, // keep single entry bundle
+      },
+    },
+  },
 })
 

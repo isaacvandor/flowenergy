@@ -1,72 +1,45 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    
-    <!-- PWA Meta Tags -->
-    <meta name="theme-color" content="#3B82F6" />
-    <meta name="description" content="12-Week Evidence-Based ADHD Training Program" />
-    
-    <!-- iOS Specific Meta Tags -->
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="Focus&Flow" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    
-    <title>ADHD Focus & Flow</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FlowApp</title>
   </head>
   <body>
-    <div id="root">
-      <!-- Fallback loading screen for mobile -->
-      <div id="mobile-fallback" style="display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column; font-family: system-ui, sans-serif; padding: 20px; text-align: center;">
-        <h1 style="color: #3B82F6; margin-bottom: 16px;">Focus & Flow</h1>
-        <p style="color: #6B7280; margin-bottom: 20px;">Loading...</p>
-        <div style="width: 32px; height: 32px; border: 3px solid #E5E7EB; border-top: 3px solid #3B82F6; border-radius: 50%; animation: spin 1s linear infinite;"></div>
-        <div id="error-message" style="color: #EF4444; margin-top: 20px; display: none; background: #FEF2F2; padding: 16px; border-radius: 8px; border: 1px solid #FCA5A5;">
-          <strong>Error loading app</strong><br>
-          <span id="error-details">Please try refreshing or use a different browser.</span><br>
-          <button onclick="window.location.reload()" style="margin-top: 12px; background: #EF4444; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
-            Reload Page
-          </button>
-        </div>
-      </div>
-    </div>
-    
-    <style>
-      @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-      }
-    </style>
-    
+    <div id="root"></div>
+
+    <!-- ✅ Safari shim: fixes misreported module support in Safari < 11.1 -->
     <script>
-      // Mobile error detection
-      window.addEventListener('error', function(e) {
-        console.error('Page error:', e);
-        document.getElementById('error-message').style.display = 'block';
-      });
-      
-      // Keep fallback visible longer and check for errors
-      window.addEventListener('load', function() {
-        setTimeout(function() {
-          const fallback = document.getElementById('mobile-fallback');
-          const errorMsg = document.getElementById('error-message');
-          
-          // If there's an error, keep the fallback visible and show error
-          if (errorMsg && errorMsg.style.display !== 'none') {
-            return; // Don't hide fallback if there's an error
+      (function () {
+        var ua = navigator.userAgent;
+        var match = ua.match(/Version\/(\d+)\.(\d+)/);
+        if (match) {
+          var major = parseInt(match[1], 10);
+          var minor = parseInt(match[2], 10);
+
+          // Safari < 11.1 misreports module support
+          if (major < 11 || (major === 11 && minor < 1)) {
+            document.addEventListener("DOMContentLoaded", function () {
+              // Remove all <script type="module"> before Safari chokes on them
+              var scripts = document.querySelectorAll('script[type="module"]');
+              scripts.forEach(function (s) {
+                s.parentNode.removeChild(s);
+              });
+
+              // Dynamically load legacy bundle
+              var legacy = document.createElement("script");
+              legacy.src = "/assets/legacy.js"; // plugin outputs this name
+              legacy.setAttribute("nomodule", "");
+              document.body.appendChild(legacy);
+            });
           }
-          
-          // Only hide if React actually rendered content
-          if (fallback && document.querySelector('#root > div') && !document.querySelector('.error-boundary')) {
-            fallback.style.display = 'none';
-          }
-        }, 3000); // Increased to 3 seconds
-      });
+        }
+      })();
     </script>
-    
+
+    <!-- ✅ Entry point for Vite; plugin-legacy will rewrite this at build -->
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
+
