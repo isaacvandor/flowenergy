@@ -18,7 +18,43 @@
     <title>ADHD Focus & Flow</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Fallback loading screen for mobile -->
+      <div id="mobile-fallback" style="display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column; font-family: system-ui, sans-serif; padding: 20px; text-align: center;">
+        <h1 style="color: #3B82F6; margin-bottom: 16px;">Focus & Flow</h1>
+        <p style="color: #6B7280; margin-bottom: 20px;">Loading...</p>
+        <div style="width: 32px; height: 32px; border: 3px solid #E5E7EB; border-top: 3px solid #3B82F6; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+        <p id="error-message" style="color: #EF4444; margin-top: 20px; display: none;">
+          Error loading app. Please try refreshing or use a different browser.
+        </p>
+      </div>
+    </div>
+    
+    <style>
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    </style>
+    
+    <script>
+      // Mobile error detection
+      window.addEventListener('error', function(e) {
+        console.error('Page error:', e);
+        document.getElementById('error-message').style.display = 'block';
+      });
+      
+      // Remove fallback when React loads
+      window.addEventListener('load', function() {
+        setTimeout(function() {
+          const fallback = document.getElementById('mobile-fallback');
+          if (fallback && document.querySelector('#root > div')) {
+            fallback.style.display = 'none';
+          }
+        }, 1000);
+      });
+    </script>
+    
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

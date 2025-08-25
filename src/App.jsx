@@ -42,6 +42,25 @@ const safeLocalStorage = {
 };
 
 const App = () => {
+  // Mobile debugging - log to console for remote debugging
+  useEffect(() => {
+    console.log('App mounted on:', {
+      userAgent: navigator.userAgent,
+      screenSize: `${window.screen.width}x${window.screen.height}`,
+      windowSize: `${window.innerWidth}x${window.innerHeight}`,
+      isMobile: /Mobi|Android/i.test(navigator.userAgent)
+    });
+    
+    // Catch unhandled errors
+    window.addEventListener('error', function(e) {
+      console.error('Global error:', e.error);
+    });
+    
+    window.addEventListener('unhandledrejection', function(e) {
+      console.error('Unhandled promise rejection:', e.reason);
+    });
+  }, []);
+
   // Generate anonymous user ID
   const generateUserId = () => {
     return 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
@@ -94,10 +113,14 @@ const App = () => {
   const initAudio = useCallback(() => {
     if (!audioContext.current && userProfile.preferences.soundEnabled && !audioContextClosed.current) {
       try {
-        audioContext.current = new (window.AudioContext || window.webkitAudioContext)();
-        audioContextClosed.current = false;
-      } catch {
-        console.log('Audio not supported');
+        // Check if AudioContext is available (mobile-safe)
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioContextClass) {
+          audioContext.current = new AudioContextClass();
+          audioContextClosed.current = false;
+        }
+      } catch (error) {
+        console.log('Audio not supported:', error);
       }
     }
   }, [userProfile.preferences.soundEnabled]);
@@ -208,7 +231,8 @@ const App = () => {
       root.classList.remove('dark');
       
       if (theme === 'auto') {
-        const isDark = prefersDark !== null ? prefersDark : window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const isDark = prefersDark !== null ? prefersDark : 
+          (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
         if (isDark) {
           root.classList.add('dark');
         }
@@ -224,7 +248,7 @@ const App = () => {
     let mediaQuery = null;
     let cleanup = null;
     
-    if (theme === 'auto') {
+    if (theme === 'auto' && window.matchMedia) {
       mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
       const handleChange = (e) => applyTheme(e.matches);
       
@@ -818,7 +842,7 @@ const App = () => {
     return (
       <div className="text-center p-6">
         <div className="text-6xl font-light mb-4 text-gray-800">
-          {minutes}:{seconds.toString().padStart(2, '0')}
+          {minutes}:{seconds < 10 ? '0' + seconds : seconds}
         </div>
         <button
           onClick={() => setIsRunning(!isRunning)}
