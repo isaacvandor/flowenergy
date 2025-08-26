@@ -9,34 +9,38 @@
   <body>
     <div id="root"></div>
 
-    <!-- ✅ Safari shim: fixes misreported module support in Safari < 11.1 -->
-    <script>
-      (function () {
-        var ua = navigator.userAgent;
-        var match = ua.match(/Version\/(\d+)\.(\d+)/);
-        if (match) {
-          var major = parseInt(match[1], 10);
-          var minor = parseInt(match[2], 10);
+<!-- ✅ Safari shim: fixes misreported module support in Safari < 11.1 -->
+<script>
+(function () {
+  var ua = navigator.userAgent;
+  var match = ua.match(/Version\/(\d+)\.(\d+)/);
+  if (match) {
+    var major = parseInt(match[1], 10);
+    var minor = parseInt(match[2], 10);
 
-          // Safari < 11.1 misreports module support
-          if (major < 11 || (major === 11 && minor < 1)) {
-            document.addEventListener("DOMContentLoaded", function () {
-              // Remove all <script type="module"> before Safari chokes on them
-              var scripts = document.querySelectorAll('script[type="module"]');
-              scripts.forEach(function (s) {
-                s.parentNode.removeChild(s);
-              });
+    // Safari < 11.1 misreports module support
+    if (major < 11 || (major === 11 && minor < 1)) {
+      document.addEventListener("DOMContentLoaded", function () {
+        // Remove all <script type="module"> before Safari chokes on them
+        var scripts = document.querySelectorAll('script[type="module"]');
+        scripts.forEach(function (s) {
+          s.parentNode.removeChild(s);
+        });
 
-              // Dynamically load legacy bundle
-              var legacy = document.createElement("script");
-              legacy.src = "/assets/legacy.js"; // plugin outputs this name
-              legacy.setAttribute("nomodule", "");
-              document.body.appendChild(legacy);
-            });
-          }
+        // Grab the real legacy entry injected by Vite
+        var legacyEntry = document.getElementById("vite-legacy-entry");
+        if (legacyEntry) {
+          var legacy = document.createElement("script");
+          legacy.src = legacyEntry.getAttribute("data-src");
+          legacy.setAttribute("nomodule", "");
+          console.log("Safari shim injecting:", legacy.src);
+	  document.body.appendChild(legacy);
         }
-      })();
-    </script>
+      });
+    }
+  }
+})();
+</script>
 
     <!-- ✅ Entry point for Vite; plugin-legacy will rewrite this at build -->
     <script type="module" src="/src/main.jsx"></script>
