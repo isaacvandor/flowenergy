@@ -1,48 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { flushSync } from 'react-dom';
 import { ChevronRight, ChevronLeft, Play, CheckCircle, Clock, Target, Calendar, Award, Settings, User, Home, BarChart3, Book, Timer, Zap, Brain, Heart } from 'lucide-react';
 
-// Safe localStorage operations with validation
-const safeLocalStorage = {
-  get: (key, defaultValue) => {
-    try {
-      const item = localStorage.getItem(key);
-      if (!item) return defaultValue;
-      
-      const parsed = JSON.parse(item);
-      // Validate the parsed data structure
-      if (key === 'userProfile' && parsed && typeof parsed === 'object') {
-        // Ensure required properties exist
-        if (!parsed.preferences || typeof parsed.preferences !== 'object') {
-          console.warn('Invalid userProfile structure, using default');
-          return defaultValue;
-        }
-      }
-      if (key === 'completedSessions' && Array.isArray(parsed)) {
-        return new Set(parsed);
-      }
-      return parsed;
-    } catch (error) {
-      console.error(`Error reading localStorage key "${key}":`, error);
-      return defaultValue;
-    }
-  },
-  
-  set: (key, value) => {
-    try {
-      const serialized = key === 'completedSessions' && value instanceof Set 
-        ? JSON.stringify([...value])
-        : JSON.stringify(value);
-      localStorage.setItem(key, serialized);
-      return true;
-    } catch (error) {
-      console.error(`Error writing localStorage key "${key}":`, error);
-      return false;
-    }
-  }
-};
+// Safe localStorage operations with validation - moved inside component to access setStorageError
+// This will be defined inside the App component
 
-// Create mobile error boundary component
-const MobileErrorBoundary = ({ children }) => {
+// Create application error boundary component
+const AppErrorBoundary = ({ children }) => {
   const [hasError, setHasError] = useState(false);
   const [error, setError] = useState(null);
 
@@ -80,9 +44,9 @@ const MobileErrorBoundary = ({ children }) => {
         justifyContent: 'center',
         alignItems: 'center'
       }}>
-        <h1 style={{ color: '#EF4444', marginBottom: '16px', fontSize: '24px' }}>Mobile Error Detected</h1>
+        <h1 style={{ color: '#EF4444', marginBottom: '16px', fontSize: '24px' }}>Application Error</h1>
         <p style={{ color: '#6B7280', marginBottom: '16px', maxWidth: '400px' }}>
-          The app crashed on your mobile device. Here's the error:
+          The app encountered an unexpected error. Here's what happened:
         </p>
         <div style={{ 
           color: '#374151', 
@@ -116,7 +80,7 @@ const MobileErrorBoundary = ({ children }) => {
           Reload App
         </button>
         <p style={{ fontSize: '12px', color: '#9CA3AF', marginTop: '16px' }}>
-          If this keeps happening, try using a different browser
+          If this keeps happening, try refreshing the page or clearing browser data
         </p>
       </div>
     );
@@ -126,6 +90,63 @@ const MobileErrorBoundary = ({ children }) => {
 };
 
 const App = () => {
+  // Storage error state for user notifications
+  const [storageError, setStorageError] = useState(null);
+  
+  // Safe localStorage operations with error reporting
+  const safeLocalStorage = useMemo(() => ({
+    get: (key, defaultValue) => {
+      try {
+        const item = localStorage.getItem(key);
+        if (!item) return defaultValue;
+        
+        const parsed = JSON.parse(item);
+        // Validate the parsed data structure
+        if (key === 'userProfile' && parsed && typeof parsed === 'object') {
+          // Ensure required properties exist
+          if (!parsed.preferences || typeof parsed.preferences !== 'object') {
+            console.warn('Invalid userProfile structure, using default');
+            return defaultValue;
+          }
+        }
+        if (key === 'completedSessions' && Array.isArray(parsed)) {
+          return new Set(parsed);
+        }
+        return parsed;
+      } catch (error) {
+        console.error(`Error reading localStorage key "${key}":`, error);
+        setStorageError(`Unable to load ${key === 'userProfile' ? 'your profile' : 'saved progress'}. Using default values.`);
+        setTimeout(() => setStorageError(null), 5000); // Clear after 5 seconds
+        return defaultValue;
+      }
+    },
+    
+    set: (key, value) => {
+      try {
+        const serialized = key === 'completedSessions' && value instanceof Set 
+          ? JSON.stringify([...value])
+          : JSON.stringify(value);
+        localStorage.setItem(key, serialized);
+        setStorageError(null); // Clear any previous errors on success
+        return true;
+      } catch (error) {
+        console.error(`Error writing localStorage key "${key}":`, error);
+        
+        // Determine error message based on error type
+        let errorMessage = `Unable to save ${key === 'userProfile' ? 'profile' : 'progress'}.`;
+        if (error.name === 'QuotaExceededError') {
+          errorMessage += ' Storage is full. Please clear some browser data.';
+        } else if (error.message && error.message.includes('localStorage')) {
+          errorMessage += ' Private browsing mode may be enabled.';
+        }
+        
+        setStorageError(errorMessage);
+        // Don't auto-clear critical save errors
+        return false;
+      }
+    }
+  }), []);
+  
   // Mobile debugging - log to console for remote debugging
   useEffect(() => {
     console.log('App mounted on:', {
@@ -134,6 +155,33 @@ const App = () => {
       windowSize: `${window.innerWidth}x${window.innerHeight}`,
       isMobile: /Mobi|Android/i.test(navigator.userAgent)
     });
+
+    // Detect page reloads and navigation
+    const handleBeforeUnload = (event) => {
+      console.warn('🔄 PAGE ABOUT TO UNLOAD/RELOAD - this will reset the timer!');
+    };
+
+    const handleUnload = (event) => {
+      console.warn('💀 PAGE UNLOADING - timer will be lost!');
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('unload', handleUnload);
+
+    // Check if this is a reload
+    if (performance.navigation && performance.navigation.type === 1) {
+      console.warn('🔄 DETECTED: This page was RELOADED');
+    } else if (performance.getEntriesByType) {
+      const navigationEntries = performance.getEntriesByType('navigation');
+      if (navigationEntries.length > 0 && navigationEntries[0].type === 'reload') {
+        console.warn('🔄 DETECTED: This page was RELOADED (Navigation Timing API)');
+      }
+    }
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('unload', handleUnload);
+    };
   }, []);
 
   // Generate anonymous user ID
@@ -146,7 +194,6 @@ const App = () => {
   const [completedSessions, setCompletedSessions] = useState(() => {
     return safeLocalStorage.get('completedSessions', new Set());
   });
-  const [currentDate, setCurrentDate] = useState(new Date());
 
   const [userProfile, setUserProfile] = useState(() => {
     const defaultProfile = {
@@ -200,6 +247,9 @@ const App = () => {
     }
   }, [userProfile.preferences.soundEnabled]);
 
+  // Track audio cleanup timeouts
+  const audioCleanupTimeouts = useRef([]);
+  
   const playSound = useCallback((frequency = 440, duration = 200, type = 'sine') => {
     if (!userProfile.preferences.soundEnabled || !audioContext.current) return;
     
@@ -219,41 +269,55 @@ const App = () => {
       oscillator.start(audioContext.current.currentTime);
       oscillator.stop(audioContext.current.currentTime + duration / 1000);
       
-      // Clean up nodes after sound completes
-      setTimeout(() => {
+      // Clean up nodes after sound completes with proper timeout tracking
+      const timeoutId = setTimeout(() => {
         try {
           oscillator.disconnect();
           gainNode.disconnect();
         } catch {
           // Nodes may already be garbage collected, which is fine
         }
+        // Remove this timeout from tracking array
+        const index = audioCleanupTimeouts.current.indexOf(timeoutId);
+        if (index > -1) {
+          audioCleanupTimeouts.current.splice(index, 1);
+        }
       }, duration + 100); // Extra 100ms buffer
+      
+      // Track the timeout for cleanup
+      audioCleanupTimeouts.current.push(timeoutId);
       
     } catch (error) {
       console.error('Audio playback failed:', error);
     }
   }, [userProfile.preferences.soundEnabled]);
 
+  // Track chord progression timeouts
+  const chordTimeouts = useRef([]);
+  
   const soundEffects = useMemo(() => ({
     click: () => playSound(800, 100, 'square'),
     sessionStart: () => playSound(523, 300, 'sine'), // C note
     sessionComplete: () => {
+      // Clear any existing chord timeouts
+      chordTimeouts.current.forEach(clearTimeout);
+      chordTimeouts.current = [];
+      
       // Play a chord progression for completion
       playSound(523, 200, 'sine'); // C
-      setTimeout(() => playSound(659, 200, 'sine'), 100); // E
-      setTimeout(() => playSound(784, 300, 'sine'), 200); // G
+      chordTimeouts.current.push(
+        setTimeout(() => playSound(659, 200, 'sine'), 100) // E
+      );
+      chordTimeouts.current.push(
+        setTimeout(() => playSound(784, 300, 'sine'), 200) // G
+      );
     },
     toggle: () => playSound(600, 150, 'triangle'),
     navigation: () => playSound(400, 100, 'sine')
   }), [playSound]);
 
-  // Update current time every minute
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentDate(new Date());
-    }, 60000);
-    return () => clearInterval(timer);
-  }, []);
+  // Remove the setInterval that was causing unnecessary re-renders
+  // Time-based functions now use new Date() directly when called
 
   // Save data to localStorage
   useEffect(() => {
@@ -271,9 +335,17 @@ const App = () => {
     }
   }, [userProfile.preferences.soundEnabled, initAudio]);
 
-  // Cleanup audio context on unmount
+  // Cleanup audio context and timeouts on unmount
   useEffect(() => {
     return () => {
+      // Clear any pending audio cleanup timeouts
+      audioCleanupTimeouts.current.forEach(clearTimeout);
+      audioCleanupTimeouts.current = [];
+      
+      // Clear any pending chord progression timeouts
+      chordTimeouts.current.forEach(clearTimeout);
+      chordTimeouts.current = [];
+      
       if (audioContext.current && !audioContextClosed.current) {
         try {
           audioContext.current.close();
@@ -338,7 +410,7 @@ const App = () => {
       }
     }
 
-    return cleanup || undefined;
+    return cleanup || (() => {});
   }, [userProfile.preferences.theme]);
 
   // Accessibility features management
@@ -359,9 +431,8 @@ const App = () => {
     }
   }, [userProfile.preferences.highContrast, userProfile.preferences.reduceMotion]);
 
-  // Safe date calculation utility
+  // Improved date calculation utility - DST safe using timestamps
   const calculateNextNotificationTime = useCallback((reminderTime) => {
-    const now = new Date();
     const [hours, minutes] = reminderTime.split(':').map(Number);
     
     // Validate time values
@@ -370,23 +441,21 @@ const App = () => {
       return null;
     }
     
+    // Use timestamps to avoid DST issues
+    const now = Date.now();
     const scheduledTime = new Date();
     scheduledTime.setHours(hours, minutes, 0, 0);
-
+    
     // If the time has passed today, schedule for tomorrow
-    if (scheduledTime <= now) {
+    if (scheduledTime.getTime() <= now) {
       scheduledTime.setDate(scheduledTime.getDate() + 1);
-      
-      // Handle month/year boundaries
-      if (scheduledTime.getMonth() !== now.getMonth()) {
-        // Date object automatically handles month/year overflow
-      }
     }
 
-    return scheduledTime;
+    // Return timestamp instead of Date object for consistency
+    return scheduledTime.getTime();
   }, []);
 
-  // Notification scheduling system
+  // Improved notification system with persistence and DST handling
   useEffect(() => {
     // Clear any existing timer
     if (notificationTimer.current) {
@@ -397,6 +466,7 @@ const App = () => {
     // Reset test notification flag when notifications are disabled
     if (!userProfile.preferences.notifications) {
       hasShownTestNotification.current = false;
+      safeLocalStorage.set('nextNotificationTime', null);
       return undefined;
     }
 
@@ -415,12 +485,61 @@ const App = () => {
         .catch(error => console.warn('Could not clear service worker notifications:', error));
     }
 
+    // Check for missed notifications first
+    const checkPendingNotification = () => {
+      const storedTime = safeLocalStorage.get('nextNotificationTime', null);
+      const now = Date.now();
+      
+      if (storedTime && now >= storedTime) {
+        // Show missed notification
+        try {
+          new Notification('Focus & Flow Reminder', {
+            body: 'Time for your daily session! Your brain is ready for some dopamine boosting exercise and mindfulness.',
+            icon: '/favicon.ico',
+            badge: '/favicon.ico',
+            tag: 'daily-reminder'
+          });
+        } catch (error) {
+          console.error('Failed to show notification:', error);
+        }
+        
+        // Schedule next notification
+        scheduleNextNotification();
+      } else if (!storedTime) {
+        // No stored time, schedule new one
+        scheduleNextNotification();
+      } else {
+        // Schedule for stored time
+        const timeUntil = storedTime - now;
+        if (timeUntil > 0 && timeUntil <= 25 * 60 * 60 * 1000) {
+          notificationTimer.current = setTimeout(() => {
+            try {
+              new Notification('Focus & Flow Reminder', {
+                body: 'Time for your daily session! Your brain is ready for some dopamine boosting exercise and mindfulness.',
+                icon: '/favicon.ico',
+                badge: '/favicon.ico',
+                tag: 'daily-reminder'
+              });
+            } catch (error) {
+              console.error('Failed to show notification:', error);
+            }
+            scheduleNextNotification();
+          }, timeUntil);
+        } else {
+          scheduleNextNotification();
+        }
+      }
+    };
+
     const scheduleNextNotification = () => {
       const nextTime = calculateNextNotificationTime(userProfile.preferences.reminderTime);
       if (!nextTime) return;
 
-      const now = new Date();
-      const timeUntilNotification = nextTime.getTime() - now.getTime();
+      const now = Date.now();
+      const timeUntilNotification = nextTime - now;
+      
+      // Store next notification time for persistence
+      safeLocalStorage.set('nextNotificationTime', nextTime);
       
       // Don't schedule if the time is too far in the future (>25 hours) or negative
       if (timeUntilNotification < 0 || timeUntilNotification > 25 * 60 * 60 * 1000) {
@@ -434,7 +553,7 @@ const App = () => {
             body: 'Time for your daily session! Your brain is ready for some dopamine boosting exercise and mindfulness.',
             icon: '/favicon.ico',
             badge: '/favicon.ico',
-            tag: 'daily-reminder' // Prevent duplicate notifications
+            tag: 'daily-reminder'
           });
         } catch (error) {
           console.error('Failed to show notification:', error);
@@ -445,7 +564,8 @@ const App = () => {
       }, timeUntilNotification);
     };
 
-    scheduleNextNotification();
+    // Start the notification system
+    checkPendingNotification();
 
     // Show test notification when notifications are first enabled (only once)
     if (userProfile.preferences.notifications && !hasShownTestNotification.current) {
@@ -471,7 +591,7 @@ const App = () => {
         notificationTimer.current = null;
       }
     };
-  }, [userProfile.preferences.notifications, userProfile.preferences.reminderTime, calculateNextNotificationTime]);
+  }, [userProfile.preferences.notifications, userProfile.preferences.reminderTime, calculateNextNotificationTime, safeLocalStorage]);
 
   // Save user profile changes
   const updateUserProfile = (updates) => {
@@ -736,11 +856,11 @@ const App = () => {
   // Helper functions for date/time
   const getDayOfWeek = () => {
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    return days[currentDate.getDay()];
+    return days[new Date().getDay()];
   };
 
   const getFormattedDate = () => {
-    return currentDate.toLocaleDateString('en-US', { 
+    return new Date().toLocaleDateString('en-US', { 
       weekday: 'long', 
       year: 'numeric', 
       month: 'long', 
@@ -749,7 +869,7 @@ const App = () => {
   };
 
   const getTimeOfDay = () => {
-    const hour = currentDate.getHours();
+    const hour = new Date().getHours();
     if (hour < 12) return 'morning';
     if (hour < 17) return 'afternoon';
     return 'evening';
@@ -857,62 +977,168 @@ const App = () => {
     return { emoji: "🌙", message: "Wind down with intention. Evening sessions help prepare your mind for restful sleep." };
   };
 
-  // Session Timer Component
-  const SessionTimer = ({ duration, onComplete }) => {
-    const [timeLeft, setTimeLeft] = useState(duration * 60);
+  // Session Timer Component - memoized to prevent unnecessary remounts
+  const SessionTimer = React.memo(({ duration, onComplete }) => {
+    console.log(`🔧 SessionTimer render: duration=${duration}, onComplete=${!!onComplete}`);
+    
+    const [endTime, setEndTime] = useState(null);
     const [isRunning, setIsRunning] = useState(false);
-    const timerRef = useRef(null);
+    const intervalRef = useRef(null);
     const onCompleteRef = useRef(onComplete);
+    const lastDurationRef = useRef(duration);
+    const lastDisplayTimeRef = useRef(duration * 60);
+    
+    // Initialize displayTime 
+    const [displayTime, setDisplayTime] = useState(() => {
+      console.log(`🏁 SessionTimer displayTime initialized to ${duration * 60}s (${duration} min)`);
+      return duration * 60;
+    });
+
+    // Log component mount/unmount
+    useEffect(() => {
+      console.log(`🏗️ SessionTimer MOUNTED with duration=${duration}`);
+      return () => {
+        console.log(`💀 SessionTimer UNMOUNTING`);
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+        }
+      };
+    }, []);
 
     // Keep onComplete callback up to date
     useEffect(() => {
       onCompleteRef.current = onComplete;
     }, [onComplete]);
 
-    // Reset timer when duration changes
+    // Only reset timer when duration MEANINGFULLY changes (different activity)
     useEffect(() => {
-      setTimeLeft(duration * 60);
-      setIsRunning(false);
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
+      // Only reset if duration changed AND timer isn't currently running
+      // This prevents resets during active sessions
+      if (lastDurationRef.current !== duration && !isRunning) {
+        console.log(`🔄 TIMER RESET: duration changed ${lastDurationRef.current} → ${duration} min (timer not running)`);
+        setEndTime(null);
+        setDisplayTime(duration * 60);
+        lastDurationRef.current = duration;
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+      } else if (lastDurationRef.current !== duration && isRunning) {
+        // Duration changed during running - just update the ref without resetting
+        console.warn(`⚠️ DURATION CHANGED DURING ACTIVE TIMER: ${lastDurationRef.current} → ${duration} min - NOT resetting timer`);
+        lastDurationRef.current = duration;
       }
-    }, [duration]);
+    }, [duration, isRunning]);
 
-    // Timer effect - only runs when isRunning changes
+    // Timer effect - runs when isRunning changes
     useEffect(() => {
-      if (isRunning) {
-        timerRef.current = setInterval(() => {
-          setTimeLeft((prevTime) => {
-            if (prevTime <= 1) {
-              // Timer completed
-              setIsRunning(false);
-              if (onCompleteRef.current) {
-                onCompleteRef.current();
-              }
-              return 0;
+      if (isRunning && endTime) {
+        // Update display immediately
+        const updateDisplay = () => {
+          const now = Date.now();
+          if (now >= endTime) {
+            // Timer completed
+            console.log(`🎉 TIMER COMPLETED!`);
+            setDisplayTime(0);
+            setIsRunning(false);
+            
+            if (onCompleteRef.current) {
+              onCompleteRef.current();
             }
-            return prevTime - 1;
-          });
+            return false; // Stop updating
+          }
+          
+          const remaining = Math.ceil((endTime - now) / 1000);
+          
+          // Log any unexpected resets or discontinuities using ref
+          if (Math.abs(remaining - lastDisplayTimeRef.current) > 2) {
+            console.warn(`⚡ TIMER DISCONTINUITY: was ${lastDisplayTimeRef.current}s, now ${remaining}s (diff: ${remaining - lastDisplayTimeRef.current}s)`);
+          }
+          
+          lastDisplayTimeRef.current = remaining;
+          setDisplayTime(remaining);
+          return true; // Continue updating
+        };
+
+        // Initial update
+        updateDisplay();
+
+        // Set interval for display updates
+        intervalRef.current = setInterval(() => {
+          if (!updateDisplay()) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+          }
         }, 1000);
+
+        // Handle page visibility changes to keep timer accurate
+        const handleVisibilityChange = () => {
+          if (document.hidden) {
+            console.log(`👁️ PAGE HIDDEN - timer may be throttled`);
+          } else {
+            console.log(`👁️ PAGE VISIBLE - forcing timer update`);
+            // Force an immediate update when page becomes visible
+            updateDisplay();
+          }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        // Also handle window focus/blur as backup
+        const handleFocus = () => {
+          console.log(`🔍 WINDOW FOCUSED - forcing timer update`);
+          updateDisplay();
+        };
+
+        const handleBlur = () => {
+          console.log(`😴 WINDOW BLURRED - timer may be throttled`);
+        };
+
+        window.addEventListener('focus', handleFocus);
+        window.addEventListener('blur', handleBlur);
+
+        // Cleanup function for this effect
+        return () => {
+          document.removeEventListener('visibilitychange', handleVisibilityChange);
+          window.removeEventListener('focus', handleFocus);
+          window.removeEventListener('blur', handleBlur);
+        };
       } else {
-        if (timerRef.current) {
-          clearInterval(timerRef.current);
-          timerRef.current = null;
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
         }
       }
 
       // Cleanup
       return () => {
-        if (timerRef.current) {
-          clearInterval(timerRef.current);
-          timerRef.current = null;
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
         }
       };
-    }, [isRunning]);
+    }, [isRunning, endTime]);
 
-    const minutes = Math.floor(timeLeft / 60);
-    const seconds = timeLeft % 60;
+    const handleStartPause = () => {
+      if (isRunning) {
+        // Pause - save remaining time
+        const now = Date.now();
+        const remaining = Math.max(0, Math.ceil((endTime - now) / 1000));
+        console.log(`⏸️ TIMER PAUSED at ${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,'0')}`);
+        setDisplayTime(remaining);
+        setEndTime(null);
+        setIsRunning(false);
+      } else {
+        // Start/Resume - set end time based on current display time
+        const newEndTime = Date.now() + (displayTime * 1000);
+        console.log(`▶️ TIMER STARTED: ${Math.floor(displayTime/60)}:${String(displayTime%60).padStart(2,'0')} - will end at ${new Date(newEndTime).toLocaleTimeString()}`);
+        setEndTime(newEndTime);
+        setIsRunning(true);
+      }
+    };
+
+    const minutes = Math.floor(displayTime / 60);
+    const seconds = displayTime % 60;
 
     return (
       <div className="text-center p-6">
@@ -920,25 +1146,77 @@ const App = () => {
           {minutes}:{seconds < 10 ? '0' + seconds : seconds}
         </div>
         <button
-          onClick={() => setIsRunning(!isRunning)}
+          onClick={handleStartPause}
           className={`px-8 py-3 rounded-full text-white font-medium transition-colors ${
             isRunning ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'
           }`}
-          disabled={timeLeft === 0}
+          disabled={displayTime === 0}
         >
-          {timeLeft === 0 ? 'Complete' : isRunning ? 'Pause' : 'Start'}
+          {displayTime === 0 ? 'Complete' : isRunning ? 'Pause' : 'Start'}
         </button>
       </div>
     );
-  };
+  }, (prevProps, nextProps) => {
+    // Custom comparison function for debugging
+    console.log('🔍 SessionTimer memo comparison:', {
+      durationSame: prevProps.duration === nextProps.duration,
+      onCompleteSame: prevProps.onComplete === nextProps.onComplete,
+      prevDuration: prevProps.duration,
+      nextDuration: nextProps.duration
+    });
+    
+    return prevProps.duration === nextProps.duration && 
+           prevProps.onComplete === nextProps.onComplete;
+  });
+
+  // Add display name for debugging
+  SessionTimer.displayName = 'SessionTimer';
 
   // Home Screen Component
   const HomeScreen = () => {
     const currentWeek = userProfile.currentWeek;
     const currentWeekData = programData[currentWeek];
+    
+    // Validate program data exists for current week
+    if (!currentWeekData) {
+      console.error(`Invalid week: ${currentWeek}. Resetting to week 1.`);
+      // Reset to week 1 and show fallback UI
+      setTimeout(() => {
+        setUserProfile(prev => ({ ...prev, currentWeek: 1 }));
+      }, 100);
+      
+      return (
+        <div className="p-6 text-center">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-6">
+            <h3 className="font-semibold text-yellow-800 mb-2">Week Data Not Found</h3>
+            <p className="text-yellow-700 mb-4">
+              There was an issue loading week {currentWeek} data. Resetting to Week 1...
+            </p>
+            <div className="animate-spin w-6 h-6 border-2 border-yellow-600 border-t-transparent rounded-full mx-auto"></div>
+          </div>
+        </div>
+      );
+    }
+    
     const phaseInfo = getPhaseProgress();
     const recommendedSessionType = getRecommendedSessionType(currentWeekData);
     const rawSession = currentWeekData.sessions[recommendedSessionType];
+    
+    // Validate session data exists
+    if (!rawSession) {
+      console.error(`Invalid session type: ${recommendedSessionType} for week ${currentWeek}`);
+      return (
+        <div className="p-6 text-center">
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-6">
+            <h3 className="font-semibold text-red-800 mb-2">Session Data Error</h3>
+            <p className="text-red-700">
+              Unable to load session data for {recommendedSessionType} in Week {currentWeek}.
+            </p>
+          </div>
+        </div>
+      );
+    }
+    
     const session = {
       ...rawSession,
       duration: getAdjustedDuration(rawSession.duration),
@@ -1102,10 +1380,28 @@ const App = () => {
 
   // Session Screen Component
   const SessionScreen = () => {
+    console.log(`📺 SessionScreen render: currentActivity=${currentActivity}, week=${userProfile.currentWeek}`);
+    
     const currentWeek = userProfile.currentWeek;
     const currentWeekData = programData[currentWeek];
+    
+    // Validate program data exists
+    if (!currentWeekData) {
+      console.error(`Invalid week: ${currentWeek} in SessionScreen. Returning to home.`);
+      setCurrentScreen('home');
+      return null;
+    }
+    
     const recommendedSessionType = getRecommendedSessionType(currentWeekData);
     const rawSession = currentWeekData.sessions[recommendedSessionType];
+    
+    // Validate session exists
+    if (!rawSession) {
+      console.error(`Invalid session: ${recommendedSessionType} for week ${currentWeek}`);
+      setCurrentScreen('home');
+      return null;
+    }
+    
     const session = {
       ...rawSession,
       duration: getAdjustedDuration(rawSession.duration),
@@ -1114,22 +1410,37 @@ const App = () => {
         duration: getAdjustedDuration(activity.duration)
       }))
     };
+    
+    // Validate activity exists
+    if (!session.activities || session.activities.length === 0 || currentActivity >= session.activities.length) {
+      console.error(`Invalid activity index: ${currentActivity} for session with ${session.activities?.length || 0} activities`);
+      setCurrentScreen('home');
+      return null;
+    }
+    
     const activity = session.activities[currentActivity];
     const timeOfDay = getTimeOfDay();
 
-    const completeActivity = () => {
+    const completeActivity = useCallback(() => {
       if (currentActivity < session.activities.length - 1) {
         soundEffects.click();
         setCurrentActivity(currentActivity + 1);
       } else {
-        // Session complete
+        // Session complete - ensure all state updates are committed together
         soundEffects.sessionComplete();
-        const sessionKey = `week${currentWeek}-${recommendedSessionType}-${currentDate.toDateString()}`;
-        setCompletedSessions(new Set([...completedSessions, sessionKey]));
-        setCurrentActivity(0); // Reset for next time
+        
+        // Use flushSync to ensure all critical state updates complete atomically
+        flushSync(() => {
+          // Use timestamp to ensure unique session keys
+          const sessionKey = `week${currentWeek}-${recommendedSessionType}-${Date.now()}`;
+          setCompletedSessions(new Set([...completedSessions, sessionKey]));
+          setCurrentActivity(0); // Reset for next time
+        });
+        
+        // Navigate to complete screen after state is committed
         setCurrentScreen('complete');
       }
-    };
+    }, [currentActivity, session.activities.length, soundEffects, currentWeek, recommendedSessionType, completedSessions]);
 
     return (
       <div className="p-6 h-screen flex flex-col">
@@ -1812,14 +2123,34 @@ const App = () => {
   };
 
   return (
-    <MobileErrorBoundary>
+    <AppErrorBoundary>
       <div className="max-w-md mx-auto bg-gray-50 min-h-screen flex flex-col safe-area-inset">
+        {/* Storage Error Alert */}
+        {storageError && (
+          <div className="bg-red-500 text-white px-4 py-3 shadow-lg flex items-start justify-between animate-pulse">
+            <div className="flex items-start space-x-2">
+              <svg className="w-5 h-5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              <p className="text-sm">{storageError}</p>
+            </div>
+            <button 
+              onClick={() => setStorageError(null)}
+              className="ml-4 text-white hover:text-gray-200"
+            >
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </button>
+          </div>
+        )}
+        
         <div className="flex-1 overflow-auto">
           {renderScreen()}
         </div>
         {(currentScreen !== 'session' && currentScreen !== 'complete' && !showSettings) && <BottomNav />}
       </div>
-    </MobileErrorBoundary>
+    </AppErrorBoundary>
   );
 };
 
